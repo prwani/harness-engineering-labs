@@ -20,12 +20,13 @@ def whoami() -> None:
     try:
         foundry_token_provider()()
     except Exception as error:
-        raise typer.Exit(f"Unable to acquire Foundry Entra token: {error}") from error
+        typer.echo(f"Unable to acquire Foundry Entra token: {error}", err=True)
+        raise typer.Exit(1) from error
     typer.echo("Foundry Entra token acquired.")
 
 
 @app.command()
-def ping(provider: str = typer.Option(None), probe: bool = False) -> None:
+def ping(provider: str | None = typer.Option(None), probe: bool = False) -> None:
     """Validate configuration and record declared deployment capabilities."""
     config = HarnessConfig.from_env()
     provider = provider or config.provider

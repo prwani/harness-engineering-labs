@@ -98,4 +98,7 @@ class ScriptedModel:
         self._turns = iter(turns)
 
     def complete(self, **_: Any) -> Turn:
-        return next(self._turns)
+        try:
+            return next(self._turns)
+        except StopIteration as error:
+            raise RuntimeError("ScriptedModel ran out of scripted turns") from error
