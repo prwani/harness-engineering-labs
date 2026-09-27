@@ -1,4 +1,4 @@
-# Harness, Loop & Graph Engineering — Lab Outline (v4)
+# Harness, Loop & Graph Engineering — Lab Outline (v5)
 
 > **Model → Harness → Agents → Orchestration.** The model supplies the intelligence. The **harness** is the
 > reusable runtime that makes it useful: the loop, transcript, tool execution, approvals, telemetry, compaction,
@@ -13,7 +13,8 @@
 - **Models:** Microsoft Foundry. Claude runs through the **Messages API** and GPT through the **Responses API**.
 - **Language:** Python only (.NET may follow later).
 - **First build scope:** Labs 0–8, run entirely from the learner's own machine through the `harness` CLI. No Docker needed.
-- **Status:** outline for review. The lab content gets built after sign-off.
+- **Code layout:** every lab folder is a **complete, runnable snapshot** of the codebase as it stands at the end of that lab (§8).
+- **Status:** outline approved. Labs 0–8 are ready to build from this document.
 
 ---
 
@@ -148,7 +149,7 @@ The learner builds an **ops agent** for the AKS Store Demo. It has two surfaces 
 
    It needs no Docker: it runs as a local Python process started by `harness sim start`. Every run is deterministic and scorable. **This is the only runtime surface for Labs 0–8.**
 2. **Real app (deferred; not part of the Labs 0–8 build).** Run `docker compose -f docker-compose-quickstart.yml up` from the
-   sample repo, or use an existing AKS deployment. The same tools point at it through `STORE_BASE_URL`.
+   sample repo, or use an existing AKS deployment. The same tools point at it by changing `PRODUCT_BASE_URL`, `ORDER_BASE_URL` and `MAKELINE_BASE_URL` (§3.3).
    Scoring is looser in this mode because the data isn't seeded.
 
 ### 2.3 How the task grows across labs
@@ -182,7 +183,7 @@ The learner builds an **ops agent** for the AKS Store Demo. It has two surfaces 
 Every run prints the scorecard and writes it to `runs/<harness_version>/<features>/<provider>-<model>/<task>/<repeat>.json`.
 Section 2.5 explains how scorecards are combined to measure progress.
 
-**Three kinds of field.** Each field is marked in the schema (`labs/common/contracts/scorecard.schema.json`) as one of:
+**Three kinds of field.** Each field is marked in the schema (`common/contracts/scorecard.schema.json`) as one of:
 - **raw**: copied exactly from the provider's usage object or the simulator's logs;
 - **derived**: computed by a documented formula from raw fields, with its inputs recorded;
 - **null**: not applicable at this harness version (for example `schema_valid` before Lab 11, or compute fields before Lab 9). `null` is never rendered or averaged as 0.
@@ -326,7 +327,7 @@ Two adapters, `MessagesAdapter` and `ResponsesAdapter`, are selected with `MODEL
 - `MessagesAdapter` turns each mark into `cache_control`.
 - `ResponsesAdapter` turns each mark into `prompt_cache_breakpoint` and sets a stable `prompt_cache_key` per agent spec.
   - Breakpoints only attach to input content blocks, so when breakpoints are enabled the system prompt is sent as a leading developer/system message with an `input_text` block.
-- **Tested model matrix.** The labs are verified on a pinned list of models and deployment types (`labs/common/model_matrix.yaml`). Learners may use others, but cache assertions only apply where the probe says they can.
+- **Tested model matrix.** The labs are verified on a pinned list of models and deployment types (`common/model_matrix.yaml`). Learners may use others, but cache assertions only apply where the probe says they can.
 - Lab 0 probes each deployment and records `capabilities` (`supports_cache_breakpoints`, parallel tool calls, reasoning items). On older GPT models or PTU-M deployments, the adapter drops the marks and relies on automatic prefix caching, so a model that can't take breakpoints never gets a 400 because of them.
 
 **Tool-call correlation rules (enforced by the harness, verified from Lab 2 onward).** A single run spans many
@@ -398,7 +399,7 @@ at any point is an honest picture of what the harness can do.
 `approval_request`, `usage`, `compaction`, `agent_spawned` and `stop(reason)`. The CLI renders them live, and the
 offline checks assert on them, so both views see the same run.
 
-**What `labs/common` provides:** only `cli_kit/`, with `rich` rendering helpers for each event type, the `.env`
+**What `common/` provides:** only `cli_kit/`, with `rich` rendering helpers for each event type, the `.env`
 → `HarnessConfig` loader, and CLI test fixtures (`typer.testing.CliRunner` plus `ScriptedModel`). Learners
 write every command.
 
@@ -426,11 +427,71 @@ history repair, policy decisions and compaction live in the harness. `checks/tes
 | 13 | `harness graph run capstone --ablate <component>` | ablation from the command line |
 | 14 | — (compare this CLI's UX with Claude Code and Copilot CLI) | harness vs. harness |
 
-**Contracts.** Each lab's `CONTRACT.md` is backed by versioned machine-checkable files in `labs/common/contracts/`: JSON Schemas for the event stream (including event ordering rules), the canonical transcript line, the `StoreHealthReport` envelope, agent-spec frontmatter, policy files and the scorecard, plus **golden fixtures** replayed by `ScriptedModel` for both providers. The fixtures cover parallel calls, a denied call, an unknown tool, truncation (`stop=length`), a cap hit mid-turn and crash-then-resume. A learner's harness passes a lab when its output for each fixture matches the golden transcript and events.
+**Contracts.** Each lab's `CONTRACT.md` is backed by versioned machine-checkable files in `common/contracts/`: JSON Schemas for the event stream (including event ordering rules), the canonical transcript line, the `StoreHealthReport` envelope, agent-spec frontmatter, policy files and the scorecard, plus **golden fixtures** replayed by `ScriptedModel` for both providers. The fixtures cover parallel calls, a denied call, an unknown tool, truncation (`stop=length`), a cap hit mid-turn and crash-then-resume. A learner's harness passes a lab when its output for each fixture matches the golden transcript and events.
 
 **Verification.** Every lab's `checks/` includes CLI tests (`CliRunner` + `ScriptedModel`) for the commands
 added in that lab, and `live_check.py` runs the lab's headline command against Foundry. Coding-agent output is
 therefore verified the same way every time: run the command, compare the output and scorecard.
+
+### 3.3 Solution components: keep it small
+
+For Labs 0–8 the harness is **one Python process**. Beyond it there is one local helper process (the Store
+Simulator), remote Azure services, and plain files on disk.
+
+```mermaid
+flowchart LR
+  subgraph Laptop["Learner's machine (Labs 0–8)"]
+    subgraph P1["Process 1: harness CLI (single Python process)"]
+      CLI["CLI (typer, thin)"] --> H["Harness.run()"]
+      H --> MC["ModelClient\n(Claude | GPT | Scripted)"]
+      H --> TR["Tool registry"]
+      H --> HK["Hook pipeline"]
+      H --> EV["Event stream → CLI renderer"]
+      H --> OT["OTel exporter (in-process)"]
+    end
+    SIM["Process 2: Store Simulator\n(FastAPI, one port)"]
+    MCP["MCP servers (Lab 8 Part B)\nstdio child processes"]
+    FS[(".harness/ files\nsessions, memory, runs,\napprovals")]
+    TR -->|HTTP| SIM
+    TR -->|stdio| MCP
+    H --> FS
+  end
+  MC -->|Entra token| FDY["Foundry models"]
+  OT -->|Entra| AI["App Insights / Foundry Traces"]
+```
+
+**Processes (Labs 0–8)**
+
+| Process | Why it is separate | Started by |
+|---|---|---|
+| `harness` CLI | It *is* the harness. Evals, sub-agents and approval prompts all run inside it. | the learner |
+| Store Simulator | It stands in for the store's live APIs. Its own write log is the ground truth for grading, so the harness never grades itself. Swapping in the real app only changes base URLs. | `harness sim start` |
+| MCP servers (Lab 8 Part B only) | MCP servers are normally separate processes. | the harness, as stdio child processes it starts and stops; no ports |
+
+**Simplifications (binding for the build)**
+1. **The simulator uses one port.** The product, order and makeline routes are served under the path prefixes `/product`, `/order` and `/makeline`, with one base URL per service in config (`PRODUCT_BASE_URL`, `ORDER_BASE_URL`, `MAKELINE_BASE_URL`), so each can point at the real service later.
+2. **Offline checks never start a server.** They drive the same simulator app in-process through the FastAPI test client (`httpx` ASGI transport).
+3. **Synchronous code for learners.** Parallel tool calls (Lab 2) and sub-agents (Lab 9) use a small thread pool. The asyncio-based MCP client is wrapped once in `common/`, so learners never write `async`.
+4. **Sub-agents are threads in the same process** (Lab 9 Part A), each with its own `Harness.run()` and transcript. There are no worker processes and no queue.
+5. **State is files** under `.harness/`: JSONL transcripts, memory files, run scorecards and the approvals log. There is no database and no storage interface.
+
+**The only interfaces**
+
+| Interface | Implementations | From |
+|---|---|---|
+| `ModelClient.complete(request) → response` | Claude (Messages API), GPT (Responses API), `ScriptedModel` | Lab 0 |
+| `Tool` (name, JSON Schema, function) in a registry | local Python functions, simulator HTTP calls, MCP tools | Lab 2 |
+| `Hook` (the §0.1 hook points, plus `pre_tool_batch` in Lab 9) | limits, policy, approvals, redaction, completion checks | Lab 2 |
+| `on_event(event)` | CLI renderer, in-memory capture for tests | Lab 1 |
+| `Workspace` / `CodeExecutor` (§3.1) | local folder and local subprocess (offline only); ACA Sandboxes and ACA Dynamic Sessions | Labs 9 and 12 |
+
+Tracing isn't one of our interfaces. It is standard OpenTelemetry, and choosing the memory, console or Foundry
+exporter is a config setting.
+
+**Labs 9 and later keep the same local shape.** Sub-agent workspaces move to ACA Sandboxes through `Workspace`
+(Lab 9 Part B), code execution moves to an ACA Dynamic Sessions pool through `CodeExecutor` (Lab 12), and
+`harness fleet` runs the *same* harness package inside N sandboxes with the local CLI as the controller. We write
+no new services.
 
 ---
 
@@ -440,8 +501,8 @@ Each lab ships in three forms:
 
 | Track | For | Contents of each lab |
 |---|---|---|
-| **A — Coding agent** | Copilot CLI, Claude Code or Codex users | `PROMPT.md` is a copy-paste prompt scoped to one lab. `CONTRACT.md` pins class names, method signatures and emitted events, backed by the JSON Schemas and golden fixtures in `labs/common/contracts/` (§3.2). Verification has two steps: **offline** `pytest checks/` (ScriptedModel plus the simulator, with no model cost), then a **live** `python live_check.py`, which runs the lab's headline `harness` command. It runs this lab's slice of the eval suite against Foundry, prints the scorecard, asserts loose thresholds, and prints the **delta against the previous harness version** (section 2.5). |
-| **B — Reference code** | Learners who read, run and modify code | `start/` (the previous lab's solution), `solution/`, and a guided walk-through with reflection questions |
+| **A — Coding agent** | Copilot CLI, Claude Code or Codex users | `PROMPT.md` is a copy-paste prompt scoped to one lab. `CONTRACT.md` pins class names, method signatures and emitted events, backed by the JSON Schemas and golden fixtures in `common/contracts/` (§3.2). Verification has two steps: **offline** `pytest checks/` (ScriptedModel plus the simulator, with no model cost), then a **live** `python live_check.py`, which runs the lab's headline `harness` command. It runs this lab's slice of the eval suite against Foundry, prints the scorecard, asserts loose thresholds, and prints the **delta against the previous harness version** (section 2.5). |
+| **B — Reference code** | Learners who read, run and modify code | The lab folder itself: a complete, runnable snapshot of the codebase at the end of the lab (§8). The previous lab's folder is the starting point, so `git diff --no-index labs/<N-1> labs/<N>` shows exactly what the lab adds. `README.md` gives a guided walk-through with reflection questions. |
 | **C — Framework mapping** (sidebar) | Learners heading to production | "How Microsoft Agent Framework does this", with the equivalent `create_harness_agent` options, middleware and providers |
 
 **Red flags** that every `PROMPT.md` tells learners to reject in coding-agent output:
@@ -498,11 +559,12 @@ flowchart LR
 | 13 ★ | Capstone: planner → generator → evaluator, dynamic graph, ablation | Static vs. dynamic graphs | 90 min | `h13` | proposed capstone |
 | 14 ★ | Same agent on Claude Code / Copilot CLI | Harness vs. agent | 45–60 min | — | proposed bonus (Track A) |
 
-**Pre-built scaffolding.** To keep labs within time, `labs/common` ships the parts that aren't the lesson: tool implementations (`list_dir`, `read_file`, `grep`, the store HTTP tools), a JSON-Schema-from-type-hints helper, a frontmatter parser, the OTel exporter setup, the three MCP servers and a BM25 helper. Learners build the loop, transcript, hooks, policies, sessions, memory, spans, skill loader and tool search.
+**Pre-built scaffolding.** To keep labs within time, `common/` ships the parts that aren't the lesson: tool implementations (`list_dir`, `read_file`, `grep`, the store HTTP tools), a JSON-Schema-from-type-hints helper, a frontmatter parser, the OTel exporter setup, the three MCP servers and a BM25 helper. Learners build the loop, transcript, hooks, policies, sessions, memory, spans, skill loader and tool search.
 
 **Why small labs:** each lab's `PROMPT.md` and `CONTRACT.md` cover a single capability, so coding-agent output
-is easier to check. Each `start/` folder is the previous lab's `solution/`, so learners can join or catch up at
-any boundary. If Labs 9–10 are skipped, Labs 11–12 use the reference versions of their pieces from `labs/common`.
+is easier to check. Every lab folder is a complete snapshot, so learners can join or catch up at any boundary
+by copying the previous lab's folder. If Labs 9–10 are skipped, Labs 11–12 use the reference versions of their
+pieces from `common/`.
 
 ---
 
@@ -518,10 +580,10 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 - Create a `.env` template holding only the endpoint, deployment names and provider. It has no secrets.
 - Sign in with `az login`, assign the Foundry data-plane role, and run `harness whoami`, which prints the signed-in principal and confirms a token can be acquired for `https://ai.azure.com/.default`.
 - Implement `ModelClient` with its two adapters, and `Ledger`, which records usage exactly as the provider reports it.
-- **Capability probe:** `harness ping --probe` records, per deployment, parallel tool calls, reasoning items, cache-breakpoint support and deployment type into `runs/capabilities.json`. It warns if the deployment isn't in `labs/common/model_matrix.yaml`.
+- **Capability probe:** `harness ping --probe` records, per deployment, parallel tool calls, reasoning items, cache-breakpoint support and deployment type into `runs/capabilities.json`. It warns if the deployment isn't in `common/model_matrix.yaml`.
 - Add `ScriptedModel`.
 - Clone `aks-store-demo` at the pinned SHA into `sandbox/repo/`.
-- Start the Store Simulator with `harness sim start` (a local Python process on `:3000/:3001/:3002`; no Docker).
+- Start the Store Simulator with `harness sim start` (one local Python process on one port, with `/product`, `/order` and `/makeline` routes; no Docker; §3.3).
 - **Tracing prerequisite:** connect an Application Insights resource to the Foundry project (tracing is off until you do). Put `FOUNDRY_PROJECT_ENDPOINT` in `.env`. **Disable local authentication** on the Application Insights resource so only Entra ingestion works. Grant the learner *Monitoring Metrics Publisher* on it (to send) and *Log Analytics Reader* (to view). Used from Lab 7.
 - **Later, before Lab 9 (not part of the Labs 0–8 build):** create an ACA **Dynamic Sessions** code-interpreter session pool and an ACA **Sandbox group**. Grant the learner's identity the data-plane roles, for example *Azure ContainerApps Session Executor* on the pool and *Container Apps SandboxGroup Data Owner* on the group. The same Entra credential is used, with no keys. `harness whoami --compute` confirms access.
 
@@ -809,10 +871,10 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
    - Span tree: `agent.run` → `agent.iteration` → `gen_ai.chat` and `tool.execute`, plus hook decisions as span events.
    - Attributes follow the GenAI semantic conventions: model, input, cached and output tokens, and latency.
    - Cost attribution **per task/todo, per agent** (`gen_ai.agent.name`, for example planner vs. fixer, and later the Lab 9 sub-agents) and **per tool**, using the allocation rule in §2.4.
-   - **Backend: Foundry tracing.** The harness emits its own GenAI-convention spans (it doesn't use Foundry's agent service, so it instruments itself). The provided `labs/common/otel_setup.py` exports them to the Application Insights resource connected to the Foundry project:
+   - **Backend: Foundry tracing.** The harness emits its own GenAI-convention spans (it doesn't use Foundry's agent service, so it instruments itself). The provided `common/otel_setup.py` exports them to the Application Insights resource connected to the Foundry project:
      - get the connection string with `AIProjectClient(endpoint, DefaultAzureCredential()).telemetry.get_application_insights_connection_string()`
      - call `configure_azure_monitor(connection_string=..., credential=DefaultAzureCredential())`. Ingestion is Entra-only because Lab 0 disabled local authentication on the Application Insights resource; otherwise the key in the connection string would still work.
-     - view the runs in the Foundry portal **Traces** view, or query them in Application Insights. Package versions and the portal experience the labs were verified on are pinned in `requirements.lock` and `labs/common/model_matrix.yaml`.
+     - view the runs in the Foundry portal **Traces** view, or query them in Application Insights. Package versions and the portal experience the labs were verified on are pinned in `requirements.lock` and `common/model_matrix.yaml`.
    - **Why an open standard:** the same spans go to an in-memory exporter (offline checks), the console (`--exporter console`) or Foundry (`--exporter foundry`), by changing only the exporter. The trace shape is identical for Claude and GPT runs.
    - **Trace data handling:** message content is off by default and switched on with `--trace-content`. Anyone with read access to the Application Insights workspace can see the traces, so each learner uses their own project, or a shared one on purpose.
 2. **Trace analysis** on an `h6` run, from the trace alone:
@@ -870,7 +932,7 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
    2. **Approve:** a reviewer runs `skills approve`, which records the approver and the content hash in `skills.lock`.
    3. **Version:** a change to the skill requires a version bump and a new approval.
    - At run time the harness refuses any skill that is unapproved, unknown, or whose hash no longer matches.
-**Part B — MCP scaling and tool search (40 min).** Flags `+mcp_all` and `+tool_search`. The three MCP servers (local stdio Python processes) and the BM25 helper are provided in `labs/common`; learners write the harness side.
+**Part B — MCP scaling and tool search (40 min).** Flags `+mcp_all` and `+tool_search`. The three MCP servers (local stdio Python processes) and the BM25 helper are provided in `common/`; learners write the harness side.
 
 5. **MCP at scale.** Mount three MCP servers, about 40 tools in total:
    - `store`: the simulator
@@ -1058,7 +1120,7 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 3. A retry that **re-invokes with identical state**. Fix it by requiring a state delta.
 4. **Over-looping:** a refinement loop on a question a single well-prompted call answers correctly.
 5. **Compaction inside a loop:** after five validation retries the history is mostly failed attempts.
-   - Compact to *original task + schema + best attempt so far + latest errors only*, using the Lab 10 compactor (or the reference one in `labs/common`).
+   - Compact to *original task + schema + best attempt so far + latest errors only*, using the Lab 10 compactor (or the reference one in `common/`).
    - Compare this with naive truncation, which drops the schema or the original task.
 
 **CLI:** render loop iterations and exit reasons; add `--explain-exits`.
@@ -1248,36 +1310,58 @@ All four loop types are practised in **core** Lab 11. Lab 12 then turns them int
 
 ---
 
-## 8. Repo layout (proposed)
+## 8. Repo layout: one complete snapshot per lab
+
+Each `labs/labNN-*/` folder holds the **entire codebase as it stands at the end of that lab**. It is
+self-contained and runnable on its own: nothing in it imports from, or reads files in, another lab folder.
+Learners who don't want to build can open any lab folder and run it; learners who build start from the
+previous lab's folder.
 
 ```
+README.md                    # course overview, prerequisites, how to use the lab folders
+AGENTS.md                    # map for coding agents → each lab's PROMPT.md and CONTRACT.md
+content-outline.txt  lab-outline.md
+infra/                       # Bicep: Foundry + App Insights role assignments (Labs 0–8); ACA session pool, sandbox group(s), egress policy (Lab 9+)
 labs/
-  AGENTS.md                  # map for coding agents → links to each lab's CONTRACT.md
-  common/
-    store_sim/               # FastAPI simulator (product/order/makeline contracts, seeded + planted issues)
-    answer_keys/             # service_map.json (from pinned SHA), catalog_issues.json
-    scorecard/  scripted_model/  cli_kit/ (event renderers, config loader, CLI test fixtures)
-    contracts/               # versioned JSON Schemas (events, transcript, report envelope, spec, policy, scorecard) + golden fixtures
-    scaffolding/             # provided non-lesson code: tool impls, schema-from-hints, frontmatter parser, BM25
-    mcp_servers/             # store, repo, ops (stdio, Lab 8 Part B)
-    otel_setup.py  model_matrix.yaml
-    repo_fetch.py (clones aks-store-demo @ pinned SHA)
-  harness/                   # the learner's package (runtime); grows lab by lab
-    cli/                     # the learner's `harness` CLI; one or more commands per lab (§3.2)
-  evals/                     # suite.yaml (≈12 tasks), graders, run.py, report.py, pricing.yaml, judge calibration set, reference runs
-  agents/                    # declarative agent specs (store-ops, planner, catalog-fixer, service-mapper, orchestrator, generator, evaluator)
-  skills/  skills-registry/  skills.lock
   lab00-setup/  lab01-bare-call/  lab02-tool-loop/  lab03-sessions/  lab04-planning/
   lab05-file-memory/  lab06-approval/  lab07-observability/  lab08-skills-tools/
   lab09-background-agents/  lab10-compaction/  lab11-loops/  lab12-graphs/
   lab13-capstone/  lab14-native-harness/
-      README.md  PROMPT.md  CONTRACT.md  start/  solution/  checks/  live_check.py
-  infra/                     # Bicep: Foundry + App Insights role assignments (Labs 0–8); ACA session pool, sandbox group(s), egress policy (Lab 9+)
-  runs/                      # scorecards per lab × provider → final comparison chart
 ```
 
-`harness/` includes `executors/` (`local`, `aca_dynamic_sessions`) and `workspaces/` (`local_dir`,
-`aca_sandbox`), added from Lab 9. These are selected with `EXECUTOR_BACKEND` and `WORKSPACE_BACKEND`.
+**Inside every lab folder** (contents grow lab by lab):
+
+```
+labNN-<name>/
+  README.md                  # what this lab adds, walk-through, reflection questions
+  PROMPT.md  CONTRACT.md     # Track A: coding-agent prompt and the contract its output must meet
+  pyproject.toml  requirements.lock  .env.example
+  harness/                   # the harness package as of this lab
+    cli/                     # the `harness` CLI as of this lab (§3.2)
+    executors/  workspaces/  # from Lab 9 (§3.1)
+  common/                    # provided, non-lesson code, copied into every snapshot
+    store_sim/               # FastAPI simulator, one port (§3.3)
+    answer_keys/             # service_map.json (from the pinned SHA), catalog_issues.json
+    scorecard/  scripted_model/  cli_kit/
+    contracts/               # JSON Schemas + golden fixtures for both providers
+    scaffolding/             # tool impls, schema-from-hints, frontmatter parser, BM25
+    mcp_servers/             # store, repo, ops (stdio; from Lab 8)
+    otel_setup.py  model_matrix.yaml  repo_fetch.py
+  agents/                    # agent specs used up to this lab (from Lab 2)
+  skills/  skills-registry/  skills.lock   # from Lab 8
+  evals/                     # suite.yaml, graders, pricing.yaml, reference runs
+  checks/                    # offline pytest checks for this lab and all earlier labs
+  live_check.py              # this lab's live check against Foundry
+  runs/reference/            # committed reference scorecards for this lab and every earlier lab
+```
+
+**Snapshot rules (for whoever builds the labs, human or coding agent)**
+1. **Build in order.** Lab N's folder starts as an exact copy of lab N−1's folder, and then gets that lab's changes. Lab 0 starts from nothing.
+2. **The diff is the lab.** `git diff --no-index labs/<N-1> labs/<N>` should show only what Lab N teaches (plus its README, PROMPT, CONTRACT and checks). Don't refactor earlier code in a later lab unless the lab's text calls for it.
+3. **Checks accumulate.** Each folder's `checks/` includes every earlier lab's offline checks, and they must all still pass. `pytest checks/` inside a folder is the snapshot's regression suite.
+4. **Self-contained.** Shared assets (simulator, answer keys, contracts, scaffolding) are copied into each folder, not referenced by relative path. The duplication is deliberate, so any folder can be downloaded alone.
+5. **Progression data travels with the snapshot.** The lab-to-lab delta (§2.5) reads the previous lab's scorecards from `runs/reference/` in the *same* folder, never from a sibling folder. Learners' own runs go to `runs/` next to it and are git-ignored.
+6. **CI** runs `pytest checks/` in every lab folder independently. Live checks aren't run in CI, because they need the learner's Foundry project and Entra sign-in.
 
 ---
 
@@ -1285,7 +1369,7 @@ labs/
 
 1. **One lab per layer.** Labs 1–10 map one-to-one to Layers 1–10, so every agenda layer is practised and every harness version adds exactly one capability. The agenda's Labs 2A, 2B and 2C become checkpoints at the end of Labs 6, 8 and 12.
 2. **Part 1 had no lab of its own.** Labs 1–5 now cover it, with the M1 baseline in Lab 2 and the whiteboard recap after Lab 5.
-3. **Layers 9 and 10 were taught but not practised.** They become the ★ Labs 9 and 10, which can be instructor demos if time is short. Labs 11–12 then use reference versions of their pieces from `labs/common`.
+3. **Layers 9 and 10 were taught but not practised.** They become the ★ Labs 9 and 10, which can be instructor demos if time is short. Labs 11–12 then use reference versions of their pieces from `common/`.
 4. **Loop and Graph Engineering are split** into Lab 11 (all four loop types, anatomy, anti-patterns) and Lab 12 (graph, secure execution, HITL, retrieval), about 140 minutes in total instead of one 90-minute lab.
 5. **Add a short "harness-engineering principles" segment**, drawn from:
    - OpenAI: the repo as system of record, `AGENTS.md` as a map, mechanical enforcement and garbage collection.
@@ -1322,7 +1406,7 @@ Layer *N* of the agenda is Lab *N*. Layer numbers appear only in this table; lab
 | Agenda Lab 2C | validation loop, max 3 retries · two-node graph (retrieve & summarise vs. compute & format) · inspect trace for loop behaviour | ✅ Checkpoint at the end of Lab 12 (Labs 11 + 12) | ✅ |
 
 **Gaps if the ★ labs are dropped:**
-- Layers 9 and 10 become lecture plus instructor demo, and Labs 11–12 use their reference pieces from `labs/common`.
+- Layers 9 and 10 become lecture plus instructor demo, and Labs 11–12 use their reference pieces from `common/`.
 - Dynamic graphs are taught only through the Lab 12 decision guide.
 - Everything else stays hands-on in core labs.
 
