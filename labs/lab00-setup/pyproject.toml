@@ -23,5 +23,8 @@ dev = ["pytest>=8,<9"]
 [project.scripts]
 harness = "harness.cli.app:app"
 
+[tool.hatch.build.targets.wheel]
+packages = ["harness", "common"]
+
 [tool.pytest.ini_options]
 testpaths = ["checks"]
