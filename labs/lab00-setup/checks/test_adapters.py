@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 
-from harness.models import MessagesAdapter, ResponsesAdapter
+import pytest
+
+from harness.models import MessagesAdapter, ResponsesAdapter, ScriptedModel, Turn
 
 
 def test_messages_adapter_preserves_tool_use_id():
@@ -28,3 +30,10 @@ def test_responses_adapter_uses_call_id_not_item_id():
     assert turn.stop == "tool"
     assert turn.tool_calls[0].id == "call_1"
     assert turn.tool_calls[0].item_id == "fc_1"
+
+
+def test_scripted_model_reports_exhaustion():
+    model = ScriptedModel([Turn(text="done")])
+    assert model.complete().text == "done"
+    with pytest.raises(RuntimeError, match="ran out"):
+        model.complete()

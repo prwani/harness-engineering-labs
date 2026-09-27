@@ -26,6 +26,8 @@ class HarnessConfig:
         )
 
     def deployment_for(self, provider: str) -> str:
+        if provider not in {"claude", "gpt"}:
+            raise ValueError("provider must be 'claude' or 'gpt'")
         deployment = self.claude_deployment if provider == "claude" else self.gpt_deployment
         if not deployment:
             raise ValueError(f"{provider.upper()} deployment is not configured")

@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 import typer
 
@@ -41,8 +43,10 @@ def ping(provider: str | None = typer.Option(None), probe: bool = False) -> None
             "supports_cache_breakpoints": None,
         }
         target = Path("runs/capabilities.json")
-        target.parent.mkdir(exist_ok=True)
-        target.write_text(json.dumps({provider: result}, indent=2))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        capabilities = json.loads(target.read_text()) if target.exists() else {}
+        capabilities[provider] = result
+        target.write_text(json.dumps(capabilities, indent=2))
     typer.echo(json.dumps(result))
 
 
@@ -56,16 +60,23 @@ def sim_start(port: int = 8000) -> None:
     )
 
 
+def _sim_request(path: str, method: str = "GET") -> str:
+    try:
+        with urlopen(Request(f"http://127.0.0.1:8000{path}", method=method), timeout=5) as response:
+            return response.read().decode()
+    except URLError as error:
+        typer.echo(f"Store Simulator is unavailable: {error.reason}", err=True)
+        raise typer.Exit(1) from error
+
+
 @sim_app.command("status")
 def sim_status() -> None:
-    """Print the deterministic seeded products."""
-    from common.store_sim.app import products
-    typer.echo(json.dumps(products, indent=2))
+    """Print products from the running simulator."""
+    typer.echo(json.dumps(json.loads(_sim_request("/product")), indent=2))
 
 
 @sim_app.command("reset")
 def sim_reset() -> None:
-    """Restore simulator seed data."""
-    from common.store_sim.app import reset
-    reset()
+    """Restore seed data in the running simulator."""
+    _sim_request("/reset", "POST")
     typer.echo("Simulator reset.")
