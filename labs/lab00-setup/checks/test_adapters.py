@@ -32,6 +32,18 @@ def test_responses_adapter_uses_call_id_not_item_id():
     assert turn.tool_calls[0].item_id == "fc_1"
 
 
+def test_responses_adapter_preserves_truncation_with_tool_calls():
+    response = SimpleNamespace(
+        output=[SimpleNamespace(type="function_call", id="fc_1", call_id="call_1", name="read_file", arguments='{}')],
+        status="incomplete",
+        usage=None,
+    )
+    turn = ResponsesAdapter(SimpleNamespace(responses=SimpleNamespace(create=lambda **_: response)), "model").complete(
+        system="", messages=[], tools=[]
+    )
+    assert turn.stop == "length"
+
+
 def test_scripted_model_reports_exhaustion():
     model = ScriptedModel([Turn(text="done")])
     assert model.complete().text == "done"

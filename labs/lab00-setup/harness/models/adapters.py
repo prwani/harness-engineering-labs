@@ -91,7 +91,7 @@ class ResponsesAdapter:
             part.text for item in response.output if item.type == "message"
             for part in item.content if part.type == "output_text"
         )
-        stop = "tool" if calls else ("length" if response.status == "incomplete" else "end")
+        stop = "length" if response.status == "incomplete" else ("tool" if calls else "end")
         return Turn(text, calls, stop, _responses_usage(response.usage), response.output)
 
 
