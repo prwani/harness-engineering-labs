@@ -1,0 +1,15 @@
+{
+  "number": 7,
+  "slug": "observability",
+  "title": "Observability and prompt caching",
+  "capabilities": [
+    "OpenTelemetry event model",
+    "usage cost attribution",
+    "result redaction",
+    "cache boundaries"
+  ],
+  "live_validation": [
+    "Application Insights traces",
+    "Foundry prompt cache probe"
+  ]
+}

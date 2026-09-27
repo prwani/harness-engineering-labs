@@ -1,0 +1,13 @@
+{
+  "number": 9,
+  "slug": "background-agents",
+  "title": "Background agents and delegation",
+  "capabilities": [
+    "sub-agent task model",
+    "parallel fan-out plan",
+    "isolated child transcripts"
+  ],
+  "live_validation": [
+    "ACA sandbox execution"
+  ]
+}

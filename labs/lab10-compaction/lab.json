@@ -1,0 +1,13 @@
+{
+  "number": 10,
+  "slug": "compaction",
+  "title": "Compaction and repository map",
+  "capabilities": [
+    "context compaction policy",
+    "summary handoff artifact",
+    "repository map metadata"
+  ],
+  "live_validation": [
+    "long-running Foundry context profile"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "number": 5,
+  "slug": "file-memory",
+  "title": "File memory and access",
+  "capabilities": [
+    "session memory",
+    "optimistic concurrency",
+    "path scope enforcement"
+  ],
+  "live_validation": [
+    "Foundry memory reuse evaluation"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "number": 14,
+  "slug": "native-harness",
+  "title": "Native harness comparison",
+  "capabilities": [
+    "comparison scorecard schema",
+    "Claude Code mapping",
+    "Copilot CLI mapping"
+  ],
+  "live_validation": [
+    "Claude Code and Copilot CLI runs"
+  ]
+}

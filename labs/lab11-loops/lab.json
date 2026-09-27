@@ -1,0 +1,14 @@
+{
+  "number": 11,
+  "slug": "loops",
+  "title": "Loop engineering",
+  "capabilities": [
+    "retry loop contract",
+    "validation loop contract",
+    "polling loop contract",
+    "refinement loop contract"
+  ],
+  "live_validation": [
+    "live retry and polling behavior"
+  ]
+}

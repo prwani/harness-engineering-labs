@@ -1,0 +1,14 @@
+{
+  "number": 2,
+  "slug": "tool-loop",
+  "title": "Tool loop and agent spec",
+  "capabilities": [
+    "tool registry",
+    "canonical transcript IDs",
+    "hook pipeline",
+    "agent specifications"
+  ],
+  "live_validation": [
+    "Foundry tool-call transcript"
+  ]
+}

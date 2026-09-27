@@ -1,0 +1,13 @@
+{
+  "number": 3,
+  "slug": "sessions",
+  "title": "History and sessions",
+  "capabilities": [
+    "JSONL session persistence",
+    "resume recovery",
+    "history validation"
+  ],
+  "live_validation": [
+    "Foundry resumed-session evaluation"
+  ]
+}

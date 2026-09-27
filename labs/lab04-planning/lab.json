@@ -1,0 +1,13 @@
+{
+  "number": 4,
+  "slug": "planning",
+  "title": "Planning and todos",
+  "capabilities": [
+    "planner and executor modes",
+    "harness-owned todos",
+    "idempotent writes"
+  ],
+  "live_validation": [
+    "Foundry catalog remediation"
+  ]
+}
