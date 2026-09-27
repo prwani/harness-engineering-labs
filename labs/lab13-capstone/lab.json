@@ -1,0 +1,13 @@
+{
+  "number": 13,
+  "slug": "capstone",
+  "title": "Planner, generator, evaluator capstone",
+  "capabilities": [
+    "dynamic planner-generator-evaluator graph",
+    "separate evaluator",
+    "ablation metadata"
+  ],
+  "live_validation": [
+    "full Foundry evaluation suite"
+  ]
+}

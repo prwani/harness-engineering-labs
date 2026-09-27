@@ -1,0 +1,5 @@
+.env
+.harness/
+runs/capabilities.json
+__pycache__/
+.pytest_cache/

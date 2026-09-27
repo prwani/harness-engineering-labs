@@ -1,0 +1,14 @@
+{
+  "number": 12,
+  "slug": "graphs",
+  "title": "Graph engineering",
+  "capabilities": [
+    "typed graph state",
+    "conditional routing",
+    "idempotent graph nodes",
+    "human route confirmation"
+  ],
+  "live_validation": [
+    "ACA code executor"
+  ]
+}

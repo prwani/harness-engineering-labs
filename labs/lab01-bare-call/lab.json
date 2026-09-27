@@ -1,0 +1,13 @@
+{
+  "number": 1,
+  "slug": "bare-call",
+  "title": "Bare model call",
+  "capabilities": [
+    "stateless bare call",
+    "StoreHealthReport envelope",
+    "deterministic scorecard grading"
+  ],
+  "live_validation": [
+    "Foundry bare-call evaluation"
+  ]
+}

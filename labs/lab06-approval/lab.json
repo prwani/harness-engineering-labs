@@ -1,0 +1,13 @@
+{
+  "number": 6,
+  "slug": "approval",
+  "title": "Tool approval and safety gates",
+  "capabilities": [
+    "tool policy gate",
+    "standing approvals",
+    "write audit log"
+  ],
+  "live_validation": [
+    "human approval flow"
+  ]
+}

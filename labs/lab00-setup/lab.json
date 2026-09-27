@@ -1,0 +1,7 @@
+{
+  "number": 0,
+  "slug": "setup",
+  "title": "Setup, dual API, and scorecard",
+  "capabilities": ["Entra configuration", "dual model adapters", "usage ledger", "store simulator"],
+  "live_validation": ["Foundry deployment ping", "Entra identity", "Application Insights connectivity"]
+}

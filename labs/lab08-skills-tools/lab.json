@@ -1,0 +1,14 @@
+{
+  "number": 8,
+  "slug": "skills-tools",
+  "title": "Agent skills and tool scaling",
+  "capabilities": [
+    "skill registry",
+    "skill approval state",
+    "tool discovery metadata",
+    "MCP tool namespace"
+  ],
+  "live_validation": [
+    "MCP stdio integration"
+  ]
+}
