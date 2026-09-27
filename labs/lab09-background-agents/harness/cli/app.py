@@ -1,4 +1,4 @@
-"""Thin Lab 0 CLI."""
+"""Thin harness CLI."""
 
 import json
 from pathlib import Path

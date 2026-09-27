@@ -1,4 +1,7 @@
-"""Deterministic in-memory store surface used by the first eight labs."""
+"""Deterministic single-process, in-memory store surface for the first eight labs.
+
+The simulator is intentionally not thread-safe; it is a local teaching fixture.
+"""
 
 from fastapi import FastAPI, HTTPException
 

@@ -12,3 +12,4 @@ def test_snapshot_declares_its_scope(monkeypatch):
     assert features.number == 0
     assert features.slug == "setup"
     assert features.capabilities
+    assert features.live_validation

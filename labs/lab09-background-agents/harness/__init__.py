@@ -1,4 +1,4 @@
-"""Public Lab 0 harness API."""
+"""Public harness API."""
 
 from .config import HarnessConfig
 from .ledger import Ledger
