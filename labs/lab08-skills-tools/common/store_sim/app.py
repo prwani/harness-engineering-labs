@@ -1,4 +1,4 @@
-"""Deterministic single-process, in-memory store surface for the first eight labs.
+"""Deterministic single-process, in-memory store surface for Labs 0–8.
 
 The simulator is intentionally not thread-safe; it is a local teaching fixture.
 """
