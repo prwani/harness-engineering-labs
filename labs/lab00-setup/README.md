@@ -14,11 +14,17 @@ pip install -e '.[dev]'
 cp .env.example .env
 az login
 pytest checks/
-harness sim status
 ```
 
 Set only non-secret values in `.env`. Authentication is acquired at runtime
 through `DefaultAzureCredential`; do not add API keys.
+
+Start the simulator in a separate terminal before inspecting or resetting it:
+
+```bash
+harness sim start
+harness sim status
+```
 
 ## Commands
 

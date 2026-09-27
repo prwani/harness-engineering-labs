@@ -34,6 +34,8 @@ def ping(provider: str | None = typer.Option(None), probe: bool = False) -> None
     provider = provider or config.provider
     if provider not in {"claude", "gpt"}:
         raise typer.BadParameter("provider must be claude or gpt")
+    if not config.endpoint:
+        raise typer.BadParameter("FOUNDRY_ENDPOINT is not configured")
     deployment = config.deployment_for(provider)
     result = {"provider": provider, "deployment": deployment}
     if probe:
@@ -60,9 +62,9 @@ def sim_start(port: int = 8000) -> None:
     )
 
 
-def _sim_request(path: str, method: str = "GET") -> str:
+def _sim_request(path: str, method: str = "GET", port: int = 8000) -> str:
     try:
-        with urlopen(Request(f"http://127.0.0.1:8000{path}", method=method), timeout=5) as response:
+        with urlopen(Request(f"http://127.0.0.1:{port}{path}", method=method), timeout=5) as response:
             return response.read().decode()
     except URLError as error:
         typer.echo(f"Store Simulator is unavailable: {error.reason}", err=True)
@@ -70,13 +72,13 @@ def _sim_request(path: str, method: str = "GET") -> str:
 
 
 @sim_app.command("status")
-def sim_status() -> None:
+def sim_status(port: int = 8000) -> None:
     """Print products from the running simulator."""
-    typer.echo(json.dumps(json.loads(_sim_request("/product")), indent=2))
+    typer.echo(json.dumps(json.loads(_sim_request("/product", port=port)), indent=2))
 
 
 @sim_app.command("reset")
-def sim_reset() -> None:
+def sim_reset(port: int = 8000) -> None:
     """Restore seed data in the running simulator."""
-    _sim_request("/reset", "POST")
+    _sim_request("/reset", "POST", port)
     typer.echo("Simulator reset.")

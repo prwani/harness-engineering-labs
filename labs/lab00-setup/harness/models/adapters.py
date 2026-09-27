@@ -31,16 +31,20 @@ class ModelClient(Protocol):
     ) -> Turn: ...
 
 
-def _usage(value: Any, *, claude: bool) -> Usage:
+def _claude_usage(value: Any) -> Usage:
     if not value:
         return Usage()
-    if claude:
-        return Usage(
-            input_tokens=getattr(value, "input_tokens", 0),
-            output_tokens=getattr(value, "output_tokens", 0),
-            cached_tokens=getattr(value, "cache_read_input_tokens", 0) or 0,
-            cache_write_tokens=getattr(value, "cache_creation_input_tokens", 0) or 0,
-        )
+    return Usage(
+        input_tokens=getattr(value, "input_tokens", 0),
+        output_tokens=getattr(value, "output_tokens", 0),
+        cached_tokens=getattr(value, "cache_read_input_tokens", 0) or 0,
+        cache_write_tokens=getattr(value, "cache_creation_input_tokens", 0) or 0,
+    )
+
+
+def _responses_usage(value: Any) -> Usage:
+    if not value:
+        return Usage()
     details = getattr(value, "input_tokens_details", None)
     return Usage(
         input_tokens=getattr(value, "input_tokens", 0),
@@ -66,7 +70,7 @@ class MessagesAdapter:
         stop = "tool" if response.stop_reason == "tool_use" else (
             "length" if response.stop_reason == "max_tokens" else "end"
         )
-        return Turn(text, calls, stop, _usage(response.usage, claude=True), response.content)
+        return Turn(text, calls, stop, _claude_usage(response.usage), response.content)
 
 
 class ResponsesAdapter:
@@ -88,7 +92,7 @@ class ResponsesAdapter:
             for part in item.content if part.type == "output_text"
         )
         stop = "tool" if calls else ("length" if response.status == "incomplete" else "end")
-        return Turn(text, calls, stop, _usage(response.usage, claude=False), response.output)
+        return Turn(text, calls, stop, _responses_usage(response.usage), response.output)
 
 
 class ScriptedModel:
