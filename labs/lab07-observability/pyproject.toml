@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "harness-lab07-observability"
 version = "0.1.0"
-description = "Lab 0: setup, dual API adapters, and scorecard ledger"
+description = "Lab 7: Observability and prompt caching"
 requires-python = ">=3.11"
 dependencies = [
   "azure-identity>=1.17,<2",
