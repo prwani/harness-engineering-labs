@@ -11,10 +11,19 @@ import typer
 
 from harness.config import HarnessConfig, foundry_token_provider
 from harness.lab_features import load_features
+from harness.planning import ModeSwitch
 
 app = typer.Typer(no_args_is_help=True)
 sim_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
+
+
+@app.command()
+def mode(target: str = typer.Argument(..., help="plan or execute")) -> None:
+    """Switch the active agent spec. Only the harness may do this."""
+    switch = ModeSwitch()
+    spec = switch.switch(target)
+    typer.echo(json.dumps({"mode": switch.mode, "agent": spec.name, "tools": list(spec.tools)}))
 
 
 @app.command("lab-info")
