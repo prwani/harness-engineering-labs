@@ -15,9 +15,14 @@ def run_tool_loop(
 ) -> Turn:
     messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
     for _ in range(max_iterations):
-        turn = client.complete(system=system, messages=messages, tools=[])
+        turn = client.complete(
+            system=system,
+            messages=messages,
+            tools=[{"name": name} for name in tools],
+        )
         if not turn.tool_calls:
             return turn
+        messages.append({"role": "assistant", "content": turn.raw or turn.text})
         results = []
         for call in turn.tool_calls:
             tool = tools.get(call.name)
