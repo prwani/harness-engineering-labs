@@ -1,8 +1,39 @@
 # Harness Engineering Labs
 
 This repository contains self-contained Python lab snapshots for building an
-agent harness from a bare model call through orchestration. Start with
-[`labs/lab00-setup`](labs/lab00-setup).
+agent harness from a bare model call through tool loops, planning, memory,
+observability, background agents, loop engineering, and graph orchestration.
 
 Each snapshot can be copied or downloaded independently. Run its checks from
-inside its directory with `pytest checks/`.
+inside its directory with `pytest checks/`. Snapshots do not import from one
+another.
+
+📖 Browse the published site: **https://prwani.github.io/harness-engineering-labs/**
+
+## Labs
+
+| # | Lab | Focus |
+|---|-----|-------|
+| 0 | [Setup, dual API, and scorecard](labs/lab00-setup) | Entra configuration, dual model adapters, usage ledger, store simulator |
+| 1 | [Bare model call](labs/lab01-bare-call) | Stateless bare call, `StoreHealthReport` envelope, deterministic scorecard grading |
+| 2 | [Tool loop and agent spec](labs/lab02-tool-loop) | Tool registry, canonical transcript IDs, hook pipeline, agent specifications |
+| 3 | [History and sessions](labs/lab03-sessions) | JSONL session persistence, resume recovery, history validation |
+| 4 | [Planning and todos](labs/lab04-planning) | Planner and executor modes, harness-owned todos, idempotent writes |
+| 5 | [File memory and access](labs/lab05-file-memory) | Session memory, optimistic concurrency, path scope enforcement |
+| 6 | [Tool approval and safety gates](labs/lab06-approval) | Tool policy gate, standing approvals, write audit log |
+| 7 | [Observability and prompt caching](labs/lab07-observability) | OpenTelemetry event model, usage cost attribution, result redaction, cache boundaries |
+| 8 | [Agent skills and tool scaling](labs/lab08-skills-tools) | Skill registry, skill approval state, tool discovery metadata, MCP tool namespace |
+| 9 | [Background agents and delegation](labs/lab09-background-agents) | Sub-agent task model, parallel fan-out plan, isolated child transcripts |
+| 10 | [Compaction and repository map](labs/lab10-compaction) | Context compaction policy, summary handoff artifact, repository map metadata |
+| 11 | [Loop engineering](labs/lab11-loops) | Retry, validation, polling, and refinement loop contracts |
+| 12 | [Graph engineering](labs/lab12-graphs) | Typed graph state, conditional routing, idempotent graph nodes, human route confirmation |
+| 13 | [Planner, generator, evaluator capstone](labs/lab13-capstone) | Dynamic planner-generator-evaluator graph, separate evaluator, ablation metadata |
+| 14 | [Native harness comparison](labs/lab14-native-harness) | Comparison scorecard schema, Claude Code mapping, Copilot CLI mapping |
+
+## Repository map
+
+- [`lab-outline.md`](lab-outline.md) — the full course outline: mental model,
+  design principles, anchor scenario, and per-lab details.
+- [`AGENTS.md`](AGENTS.md) — repository map and conventions for agents
+  working in this repo.
+- `labs/` — one runnable snapshot per lab.

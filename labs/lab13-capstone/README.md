@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 13 — Planner, generator, evaluator capstone"
+---
+
 # Lab 13 — Planner, generator, evaluator capstone
 
 This self-contained snapshot starts from Lab 12 and introduces a first-cut,

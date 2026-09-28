@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 12 — Graph engineering"
+---
+
 # Lab 12 — Graph engineering
 
 This self-contained snapshot starts from Lab 11 and introduces a first-cut,

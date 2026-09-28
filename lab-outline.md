@@ -1,3 +1,8 @@
+---
+layout: default
+title: Lab Outline
+---
+
 # Harness, Loop & Graph Engineering — Lab Outline (v5)
 
 > **Model → Harness → Agents → Orchestration.** The model supplies the intelligence. The **harness** is the

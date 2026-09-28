@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 11 — Loop engineering"
+---
+
 # Lab 11 — Loop engineering
 
 This self-contained snapshot starts from Lab 10 and introduces a first-cut,

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 7 — Observability and prompt caching"
+---
+
 # Lab 7 — Observability and prompt caching
 
 This self-contained snapshot starts from Lab 6 and introduces a first-cut,

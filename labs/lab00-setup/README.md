@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 0 — Setup, dual API, and scorecard"
+---
+
 # Lab 0 — Setup, dual API, and the scorecard
 
 Lab 0 establishes the reusable boundary between Foundry-hosted Claude Messages

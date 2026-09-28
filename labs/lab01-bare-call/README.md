@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 1 — Bare model call"
+---
+
 # Lab 1 — Bare model call
 
 This self-contained snapshot starts from Lab 0 and introduces a first-cut,

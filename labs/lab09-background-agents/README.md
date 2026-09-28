@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 9 — Background agents and delegation"
+---
+
 # Lab 9 — Background agents and delegation
 
 This self-contained snapshot starts from Lab 8 and introduces a first-cut,

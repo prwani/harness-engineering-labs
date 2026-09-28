@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 14 — Native harness comparison"
+---
+
 # Lab 14 — Native harness comparison
 
 This self-contained snapshot starts from Lab 13 and introduces a first-cut,

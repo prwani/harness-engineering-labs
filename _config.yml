@@ -1,0 +1,24 @@
+title: Harness, Loop & Graph Engineering Labs
+description: >-
+  Self-contained Python lab snapshots for building an agent harness from a
+  bare model call through tool loops, planning, memory, observability,
+  background agents, loop engineering, and graph orchestration.
+theme: jekyll-theme-cayman
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+exclude:
+  - "labs/*/.venv"
+  - "labs/*/.pytest_cache"
+  - "labs/*/runs"
+  - "labs/*/__pycache__"
+  - "labs/*/*.egg-info"
+  - "labs/*/.env"
+  - "**/__pycache__"
+  - "**/*.pyc"
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - node_modules

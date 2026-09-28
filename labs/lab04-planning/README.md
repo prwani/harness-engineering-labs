@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 4 — Planning and todos"
+---
+
 # Lab 4 — Planning and todos
 
 This self-contained snapshot starts from Lab 3 and introduces a first-cut,

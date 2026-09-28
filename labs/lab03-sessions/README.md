@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 3 — History and sessions"
+---
+
 # Lab 3 — History and sessions
 
 This self-contained snapshot starts from Lab 2 and introduces a first-cut,

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 2 — Tool loop and agent spec"
+---
+
 # Lab 2 — Tool loop and agent spec
 
 This self-contained snapshot starts from Lab 1 and introduces a first-cut,

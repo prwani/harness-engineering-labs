@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 10 — Compaction and repository map"
+---
+
 # Lab 10 — Compaction and repository map
 
 This self-contained snapshot starts from Lab 9 and introduces a first-cut,

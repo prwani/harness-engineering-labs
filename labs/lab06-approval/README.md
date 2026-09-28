@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 6 — Tool approval and safety gates"
+---
+
 # Lab 6 — Tool approval and safety gates
 
 This self-contained snapshot starts from Lab 5 and introduces a first-cut,

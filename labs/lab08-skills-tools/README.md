@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 8 — Agent skills and tool scaling"
+---
+
 # Lab 8 — Agent skills and tool scaling
 
 This self-contained snapshot starts from Lab 7 and introduces a first-cut,

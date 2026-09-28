@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Lab 5 — File memory and access"
+---
+
 # Lab 5 — File memory and access
 
 This self-contained snapshot starts from Lab 4 and introduces a first-cut,
