@@ -1,0 +1,60 @@
+- number: 0
+  slug: lab00-setup
+  title: "Setup, dual API, and scorecard"
+  focus: "Entra configuration, dual model adapters, usage ledger, store simulator"
+- number: 1
+  slug: lab01-bare-call
+  title: "Bare model call"
+  focus: "Stateless bare call, StoreHealthReport envelope, deterministic scorecard grading"
+- number: 2
+  slug: lab02-tool-loop
+  title: "Tool loop and agent spec"
+  focus: "Tool registry, canonical transcript IDs, hook pipeline, agent specifications"
+- number: 3
+  slug: lab03-sessions
+  title: "History and sessions"
+  focus: "JSONL session persistence, resume recovery, history validation"
+- number: 4
+  slug: lab04-planning
+  title: "Planning and todos"
+  focus: "Planner and executor modes, harness-owned todos, idempotent writes"
+- number: 5
+  slug: lab05-file-memory
+  title: "File memory and access"
+  focus: "Session memory, optimistic concurrency, path scope enforcement"
+- number: 6
+  slug: lab06-approval
+  title: "Tool approval and safety gates"
+  focus: "Tool policy gate, standing approvals, write audit log"
+- number: 7
+  slug: lab07-observability
+  title: "Observability and prompt caching"
+  focus: "OpenTelemetry event model, usage cost attribution, result redaction, cache boundaries"
+- number: 8
+  slug: lab08-skills-tools
+  title: "Agent skills and tool scaling"
+  focus: "Skill registry, skill approval state, tool discovery metadata, MCP tool namespace"
+- number: 9
+  slug: lab09-background-agents
+  title: "Background agents and delegation"
+  focus: "Sub-agent task model, parallel fan-out plan, isolated child transcripts"
+- number: 10
+  slug: lab10-compaction
+  title: "Compaction and repository map"
+  focus: "Context compaction policy, summary handoff artifact, repository map metadata"
+- number: 11
+  slug: lab11-loops
+  title: "Loop engineering"
+  focus: "Retry, validation, polling, and refinement loop contracts"
+- number: 12
+  slug: lab12-graphs
+  title: "Graph engineering"
+  focus: "Typed graph state, conditional routing, idempotent graph nodes, human route confirmation"
+- number: 13
+  slug: lab13-capstone
+  title: "Planner, generator, evaluator capstone"
+  focus: "Dynamic planner-generator-evaluator graph, separate evaluator, ablation metadata"
+- number: 14
+  slug: lab14-native-harness
+  title: "Native harness comparison"
+  focus: "Comparison scorecard schema, Claude Code mapping, Copilot CLI mapping"

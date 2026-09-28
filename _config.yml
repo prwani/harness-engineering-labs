@@ -3,7 +3,8 @@ description: >-
   Self-contained Python lab snapshots for building an agent harness from a
   bare model call through tool loops, planning, memory, observability,
   background agents, loop engineering, and graph orchestration.
-theme: jekyll-theme-cayman
+baseurl: "/harness-engineering-labs"
+repository: prwani/harness-engineering-labs
 markdown: kramdown
 kramdown:
   input: GFM
