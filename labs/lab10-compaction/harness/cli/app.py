@@ -9,12 +9,46 @@ from urllib.request import Request, urlopen
 
 import typer
 
+from harness.approval import harness_policy
 from harness.config import HarnessConfig, foundry_token_provider
 from harness.lab_features import load_features
+from harness.memory import SessionMemory
+from harness.planning import ModeSwitch
 
 app = typer.Typer(no_args_is_help=True)
 sim_app = typer.Typer(no_args_is_help=True)
+memory_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
+app.add_typer(memory_app, name="memory")
+
+
+@app.command()
+def approvals(tool: str, reason: str = typer.Option("", "--reason")) -> None:
+    """Show the policy decision the harness would make for a tool call."""
+    decision = harness_policy(tool, {"reason": reason} if reason else {})
+    typer.echo(json.dumps({"tool": tool, "decision": decision.decision.value, "reason": decision.reason}))
+
+
+@memory_app.command("ls")
+def memory_ls(root: str = "memory") -> None:
+    """List files in session memory."""
+    memory_root = Path(root)
+    names = sorted(p.name for p in memory_root.iterdir()) if memory_root.exists() else []
+    typer.echo(json.dumps(names))
+
+
+@memory_app.command("show")
+def memory_show(name: str, root: str = "memory") -> None:
+    """Print one session-memory file."""
+    typer.echo(SessionMemory(root=Path(root)).read(name))
+
+
+@app.command()
+def mode(target: str = typer.Argument(..., help="plan or execute")) -> None:
+    """Switch the active agent spec. Only the harness may do this."""
+    switch = ModeSwitch()
+    spec = switch.switch(target)
+    typer.echo(json.dumps({"mode": switch.mode, "agent": spec.name, "tools": list(spec.tools)}))
 
 
 @app.command("lab-info")

@@ -26,3 +26,19 @@ def test_ping_rejects_missing_endpoint(monkeypatch):
 
     assert result.exit_code != 0
     assert "FOUNDRY_ENDPOINT" in result.output
+
+
+def test_mode_switches_to_executor():
+    result = runner.invoke(app, ["mode", "execute"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["mode"] == "execute"
+    assert payload["agent"] == "catalog-fixer"
+    assert "delete_product" in payload["tools"]
+
+
+def test_mode_rejects_unknown_mode():
+    result = runner.invoke(app, ["mode", "bogus"])
+
+    assert result.exit_code != 0
