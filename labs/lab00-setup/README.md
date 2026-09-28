@@ -10,6 +10,28 @@ and GPT Responses models. It also supplies an offline `ScriptedModel`, a
 provider usage ledger, and the deterministic local store simulator used by
 Labs 0–8.
 
+## Concept
+
+Every later lab measures a *harness* capability against a fixed, known target —
+so before any agent behavior can be built, the substrate has to be stable:
+one Entra-only identity path (no API keys, ever), one interface over two
+different provider APIs, and one deterministic "world" (the store simulator)
+to run tasks against and grade honestly. Lab 0 has no agent behavior yet; it
+is the plumbing everything else stands on.
+
+**Key ideas**
+- **Two providers, one seam.** Claude's Messages API and GPT's Responses API
+  shape tool calls differently (message-grouped vs. `call_id`-addressed).
+  `ModelClient`'s two adapters normalize both into the same `Turn`/`ToolCall`
+  shape so later labs never special-case the provider.
+- **Entra-only, no secrets.** `.env` holds only endpoint/deployment/provider;
+  every credential is acquired at runtime via `DefaultAzureCredential`.
+- **A ledger, not a guess.** Usage/cost is recorded exactly as each provider
+  reports it — this is what later labs' scorecards and cost comparisons rely on.
+- **A deterministic world to test against.** The local store simulator gives
+  every later lab a stable, offline-checkable environment instead of a live,
+  flaky dependency.
+
 ## Setup
 
 ```bash
