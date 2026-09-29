@@ -46,20 +46,24 @@ and can be installed independently.
 - [`harness/writes.py`](harness/writes.py) adds `idempotency_key()`, `WriteLog`,
   and `run_write()` for reconciling repeated write calls.
 
-## Offline verification
+## Learner steps
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+pytest checks/test_planning.py
 pytest checks/
 harness lab-info
 ```
 
-## Live validation (not run locally)
+The focused test runs this lab's planning behavior with deterministic fixtures;
+the full suite checks this snapshot and all earlier labs. Both run offline.
 
-The following integrations require learner-provisioned credentials and resources:
+## External integrations
 
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Foundry catalog remediation
 
 All live paths must use Entra credentials and must not add API-key configuration.

@@ -37,20 +37,24 @@ and can be installed independently.
   JSONL-backed message history and `Session.resume()` to reconstruct it while
   checking that all entries belong to the same session.
 
-## Offline verification
+## Learner steps
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+pytest checks/test_session.py
 pytest checks/
 harness lab-info
 ```
 
-## Live validation (not run locally)
+The focused test runs this lab's session behavior with deterministic fixtures;
+the full suite checks this snapshot and all earlier labs. Both run offline.
 
-The following integrations require learner-provisioned credentials and resources:
+## External integrations
 
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Foundry resumed-session evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.

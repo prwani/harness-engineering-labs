@@ -40,20 +40,24 @@ and can be installed independently.
 - [`checks/test_bare.py`](checks/test_bare.py) checks that the call returns a
   turn without tool calls.
 
-## Offline verification
+## Learner steps
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+pytest checks/test_bare.py
 pytest checks/
 harness lab-info
 ```
 
-## Live validation (not run locally)
+The focused test runs this lab's bare-call behavior with deterministic fixtures;
+the full suite checks this snapshot and all earlier labs. Both run offline.
 
-The following integrations require learner-provisioned credentials and resources:
+## External integrations
 
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Foundry bare-call evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.

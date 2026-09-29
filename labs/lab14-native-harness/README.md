@@ -44,20 +44,25 @@ and can be installed independently.
 - The same module adds `LAYER_MAPPING`, `claude_code_mapping()`, and
   `copilot_cli_mapping()` as reference mappings to native harness concepts.
 
-## Offline verification
+## Learner steps
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+pytest checks/test_native_harness.py
 pytest checks/
 harness lab-info
 ```
 
-## Live validation (not run locally)
+The focused test runs this lab's native-harness comparison behavior with
+deterministic fixtures; the full suite checks this snapshot and all earlier
+labs. Both run offline.
 
-The following integrations require learner-provisioned credentials and resources:
+## External integrations
 
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Claude Code and Copilot CLI runs
 
 All live paths must use Entra credentials and must not add API-key configuration.
