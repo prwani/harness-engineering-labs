@@ -74,6 +74,5 @@ other runtime behavior are outside this small example policy. Do not use it
 with untrusted input, production Azure resources, or sensitive repositories.
 Lab 6 adds human approval as a distinct policy decision.
 
-The already-published Labs 3 onward were created before this 2A/2B split and
-have not yet inherited Lab 2B's hooks; do not treat those older snapshots as
-an upgrade of this command policy.
+Labs 3 onward retain this snapshot's hooked tool loop, progress indicator,
+and run summary for `harness ask`.

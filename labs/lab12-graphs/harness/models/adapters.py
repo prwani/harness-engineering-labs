@@ -59,8 +59,37 @@ class MessagesAdapter:
 
     def complete(self, *, system: str, messages: list[dict[str, Any]],
                  tools: list[dict[str, Any]], **opts: Any) -> Turn:
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                   {
+                       "type": "tool_result",
+                       "tool_use_id": result["call_id"],
+                       "content": result["output"],
+                   }
+                   for result in message["content"]
+                ],
+            }
+            if message["role"] == "tool"
+            else message
+            for message in messages
+        ]
+        tools = [
+            {
+                "name": tool["name"],
+                "description": tool.get("description", ""),
+                "input_schema": tool.get("input_schema", {"type": "object"}),
+            }
+            for tool in tools
+        ]
         response = self.client.messages.create(
-            model=self.model, system=system, messages=messages, tools=tools, **opts
+            model=self.model,
+            system=system,
+            messages=messages,
+            tools=tools,
+            max_tokens=opts.pop("max_tokens", 1024),
+            **opts,
         )
         calls = [
             ToolCall(block.id, block.name, dict(block.input))
@@ -79,8 +108,36 @@ class ResponsesAdapter:
 
     def complete(self, *, system: str, messages: list[dict[str, Any]],
                  tools: list[dict[str, Any]], **opts: Any) -> Turn:
+        inputs = []
+        for message in messages:
+            if message["role"] == "assistant":
+                raw = message["content"]
+                inputs.extend(
+                   item.model_dump(exclude_none=True) if hasattr(item, "model_dump") else item
+                   for item in raw if isinstance(raw, list)
+                )
+            elif message["role"] == "tool":
+                inputs.extend(
+                   {
+                       "type": "function_call_output",
+                       "call_id": result["call_id"],
+                       "output": result["output"],
+                   }
+                   for result in message["content"]
+                )
+            else:
+                inputs.append(message)
+        tools = [
+            {
+                "type": "function",
+                "name": tool["name"],
+                "description": tool.get("description", ""),
+                "parameters": tool.get("input_schema", {"type": "object"}),
+            }
+            for tool in tools
+        ]
         response = self.client.responses.create(
-            model=self.model, instructions=system, input=messages, tools=tools,
+            model=self.model, instructions=system, input=inputs, tools=tools,
             store=False, **opts
         )
         calls = [

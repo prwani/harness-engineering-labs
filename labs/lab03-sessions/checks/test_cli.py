@@ -1,5 +1,7 @@
 import json
+import re
 
+import pytest
 from typer.testing import CliRunner
 
 from harness.cli.app import app
@@ -26,3 +28,110 @@ def test_ping_rejects_missing_endpoint(monkeypatch):
 
     assert result.exit_code != 0
     assert "FOUNDRY_ENDPOINT" in result.output
+
+
+def test_ask_uses_tool_loop(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    monkeypatch.setattr(learner, "create_model_client", lambda: ScriptedModel([Turn(text="answer")]))
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "What is in this repository?"])
+
+    assert result.exit_code == 0
+    assert "answer" in result.output
+    assert "Tokens:" in result.output
+
+
+def test_ask_without_question_keeps_repository_prompt_available(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    questions = iter(["What is in this repository?", "Show the latest commit.", "/exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(questions))
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([Turn(text="Files found."), Turn(text="Commit found.")]),
+    )
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert result.output.count("Assistant>") == 2
+    assert "Files found." in result.output
+    assert "Commit found." in result.output
+
+
+def test_ask_reports_hook_denial_without_running_shell(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, ToolCall, Turn
+
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([
+            Turn(text="", tool_calls=[ToolCall("blocked", "shell", {"command": "echo demo"})]),
+            Turn(text="The hook denied shell execution."),
+        ]),
+    )
+    monkeypatch.setattr(
+        "harness.tools._run_shell",
+        lambda *args, **kwargs: pytest.fail("shell command executed"),
+    )
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "Run shell"])
+
+    assert result.exit_code == 0
+    assert "Hook: denied shell: shell commands are disabled in Lab 2B" in result.output
+    assert "The hook denied shell execution." in result.output
+
+
+def test_ask_reports_progress_time_and_run_summary(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.ledger import Usage
+    from harness.models import ScriptedModel, ToolCall, Turn
+
+    (tmp_path / "README.md").write_text("hello")
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([
+            Turn(text="", tool_calls=[ToolCall("call_1", "read_file", {"path": "README.md"})],
+                 usage=Usage(input_tokens=3, output_tokens=1)),
+            Turn(text="It says hello.", usage=Usage(input_tokens=5, output_tokens=2)),
+        ]),
+    )
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "Read README.md"])
+
+    assert result.exit_code == 0
+    assert "... waiting for model (LLM call 1)" in result.output
+    assert "... waiting for model (LLM call 2)" in result.output
+    assert re.search(r"Tokens: input=8, output=3 \| Time: \d+\.\ds", result.output)
+    assert re.search(
+        r"Summary: llm_calls=2, tool_calls=1, denied=0, tool_errors=0, "
+        r"model_time=\d+\.\ds, tool_time=\d+\.\ds",
+        result.output,
+    )
+
+
+def test_activity_spinner_redraws_and_clears_on_a_terminal():
+    import io
+    import time
+
+    from harness.cli.interactive import Activity
+
+    class Terminal(io.StringIO):
+        def isatty(self):
+            return True
+
+    stream = Terminal()
+    with Activity(stream, interval=0.01) as activity:
+        activity.status("waiting for model (LLM call 1)")
+        time.sleep(0.05)
+        activity.echo("Tool: git_status({})")
+        time.sleep(0.05)
+
+    output = stream.getvalue()
+    assert "waiting for model (LLM call 1) (" in output
+    assert "Tool: git_status({})\n" in output
+    assert output.endswith("\r")
+    assert activity.elapsed >= 0.1

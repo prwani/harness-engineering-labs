@@ -10,3 +10,7 @@
 - JSONL session persistence
 - resume recovery
 - history validation
+
+`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
+behind the pre-tool command policy and pre-model history validation, and
+each answer reports elapsed time plus LLM/tool call counts.
