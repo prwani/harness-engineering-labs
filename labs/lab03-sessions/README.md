@@ -31,6 +31,12 @@ This self-contained snapshot starts from Lab 2 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/session.py`](harness/session.py) adds `Session.append()` for a
+  JSONL-backed message history and `Session.resume()` to reconstruct it while
+  checking that all entries belong to the same session.
+
 ## Offline verification
 
 ```bash

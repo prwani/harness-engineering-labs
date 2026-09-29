@@ -36,6 +36,13 @@ This self-contained snapshot starts from Lab 6 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/telemetry.py`](harness/telemetry.py) adds `Span` and `Tracer` for
+  recording a local span tree and `cost_for()` for usage-based cost estimates.
+- The same module adds `redact()` for sensitive tool-output patterns and
+  `cache_breakpoints()` for estimating stable prompt boundaries.
+
 ## Offline verification
 
 ```bash

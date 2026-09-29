@@ -35,6 +35,13 @@ This self-contained snapshot starts from Lab 7 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/skills.py`](harness/skills.py) adds `load_skill()` and
+  `SkillRegistry` for parsing skill files and requiring approval before use.
+- The same module adds `ToolCatalog` for tool discovery and
+  `register_mcp_tools()` / `mcp_namespace()` for namespaced MCP metadata.
+
 ## Offline verification
 
 ```bash

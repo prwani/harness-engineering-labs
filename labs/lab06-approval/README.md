@@ -39,6 +39,16 @@ This self-contained snapshot starts from Lab 5 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/approval.py`](harness/approval.py) adds `harness_policy()` and
+  `combine()` for allow/ask/deny decisions, with `AgentPolicy` for stricter
+  per-agent rules.
+- The same module adds `StandingApprovals` for session rules and `AuditLog`
+  for recording executed writes.
+- [`harness/cli/app.py`](harness/cli/app.py) adds `approvals()` to inspect a
+  tool's default policy decision.
+
 ## Offline verification
 
 ```bash

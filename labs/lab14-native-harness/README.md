@@ -36,6 +36,14 @@ This self-contained snapshot starts from Lab 13 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/native_harness.py`](harness/native_harness.py) adds
+  `ComparisonScorecard` / `ScorecardEntry` for comparing run metrics and
+  `render_comparison()` for tabular results.
+- The same module adds `LAYER_MAPPING`, `claude_code_mapping()`, and
+  `copilot_cli_mapping()` as reference mappings to native harness concepts.
+
 ## Offline verification
 
 ```bash

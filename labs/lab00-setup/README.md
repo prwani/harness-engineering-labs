@@ -32,6 +32,19 @@ is the plumbing everything else stands on.
   every later lab a stable, offline-checkable environment instead of a live,
   flaky dependency.
 
+## Added in this lab
+
+- [`harness/models/adapters.py`](harness/models/adapters.py) defines `ModelClient`
+  and `Turn`, with `MessagesAdapter`, `ResponsesAdapter`, and the offline
+  `ScriptedModel`.
+- [`harness/config.py`](harness/config.py) provides `HarnessConfig` and
+  `foundry_token_provider()` for non-secret configuration and Entra identity.
+- [`harness/ledger.py`](harness/ledger.py) records provider-reported usage with
+  `Ledger`; [`common/store_sim/app.py`](common/store_sim/app.py) supplies the
+  seeded local store and read endpoints.
+- [`harness/cli/app.py`](harness/cli/app.py) introduces `whoami()`, `ping()`,
+  and simulator commands; [`lab.json`](lab.json) declares snapshot capabilities.
+
 ## Setup
 
 ```bash

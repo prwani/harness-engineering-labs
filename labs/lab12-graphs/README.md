@@ -41,6 +41,14 @@ This self-contained snapshot starts from Lab 11 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/graph.py`](harness/graph.py) adds `GraphState` to track data,
+  visited nodes, and executed keys.
+- `Graph.add_node()`, `Graph.add_route()`, and `Graph.run()` in the same file
+  introduce conditional routing, replay protection, and optional human route
+  confirmation.
+
 ## Offline verification
 
 ```bash

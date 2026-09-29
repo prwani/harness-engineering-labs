@@ -38,6 +38,12 @@ This self-contained snapshot starts from Lab 1 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/tool_loop.py`](harness/tool_loop.py) adds `run_tool_loop()`, which
+  calls the model, dispatches named tools, pairs results with call IDs, and stops
+  on a final turn or the iteration bound.
+
 ## Offline verification
 
 ```bash

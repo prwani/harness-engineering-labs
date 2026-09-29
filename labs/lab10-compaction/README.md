@@ -33,6 +33,14 @@ This self-contained snapshot starts from Lab 9 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/compaction.py`](harness/compaction.py) adds `CompactionPolicy`,
+  `compact()`, and `SummaryHandoff` to replace older messages with a summary
+  while retaining recent messages.
+- The same module adds `build_repo_map()` for a stable index of files and
+  directories.
+
 ## Offline verification
 
 ```bash

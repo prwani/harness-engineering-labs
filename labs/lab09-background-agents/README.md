@@ -36,6 +36,13 @@ This self-contained snapshot starts from Lab 8 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/subagents.py`](harness/subagents.py) adds `SubAgentTask` and
+  `ChildTranscript` for isolated child work, plus `run_sub_agent()` to execute it.
+- The same module adds `FanOutPlan` and `run_fan_out()` to group tasks into
+  concurrency-capped batches.
+
 ## Offline verification
 
 ```bash

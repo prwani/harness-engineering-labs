@@ -36,6 +36,12 @@ This self-contained snapshot starts from Lab 10 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/loops.py`](harness/loops.py) adds `RetryLoop`, `ValidationLoop`,
+  `PollingLoop`, and `RefinementLoop` with bounded retry, feedback, polling,
+  and improvement behavior; `LoopExhaustedError` marks unsuccessful exits.
+
 ## Offline verification
 
 ```bash
