@@ -33,6 +33,13 @@ This self-contained snapshot starts from Lab 0 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/bare.py`](harness/bare.py) adds `run_bare()`: one stateless model
+  request with no tools, establishing the control-group behavior.
+- [`checks/test_bare.py`](checks/test_bare.py) checks that the call returns a
+  turn without tool calls.
+
 ## Offline verification
 
 ```bash

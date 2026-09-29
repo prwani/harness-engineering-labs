@@ -36,6 +36,16 @@ This self-contained snapshot starts from Lab 3 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/planning.py`](harness/planning.py) defines `AgentSpec`, the
+  read-oriented `PLANNER` and write-capable `EXECUTOR` specs, and `ModeSwitch`;
+  [`harness/cli/app.py`](harness/cli/app.py) exposes the `mode()` command.
+- [`harness/todos.py`](harness/todos.py) adds `TodoList` for tracking open work
+  and rendering a reminder.
+- [`harness/writes.py`](harness/writes.py) adds `idempotency_key()`, `WriteLog`,
+  and `run_write()` for reconciling repeated write calls.
+
 ## Offline verification
 
 ```bash

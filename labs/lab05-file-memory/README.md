@@ -35,6 +35,15 @@ This self-contained snapshot starts from Lab 4 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/memory.py`](harness/memory.py) adds `SessionMemory` for local files
+  and `SharedStore` for opt-in, version-checked shared writes.
+- The same module adds `FileScope.check()` for path authorization and
+  `snapshot_key()` / `CachedArtifact.is_stale()` for freshness checks.
+- [`harness/cli/app.py`](harness/cli/app.py) adds `memory_ls()` and
+  `memory_show()` to inspect session-memory files.
+
 ## Offline verification
 
 ```bash

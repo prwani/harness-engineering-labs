@@ -35,6 +35,14 @@ This self-contained snapshot starts from Lab 12 and introduces a first-cut,
 offline-testable representation of its capability. It retains all earlier checks
 and can be installed independently.
 
+## Added in this lab
+
+- [`harness/capstone.py`](harness/capstone.py) adds `AblationConfig` and
+  `build_capstone_graph()` to compose planning, generation, and separate
+  evaluation nodes with a configurable refinement route.
+- The same module adds `run_capstone()` for graph execution and `AblationRun`
+  for summarizing the enabled capabilities and result.
+
 ## Offline verification
 
 ```bash
