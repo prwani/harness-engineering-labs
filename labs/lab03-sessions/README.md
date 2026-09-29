@@ -47,10 +47,28 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's session behavior: `pytest checks/test_session.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Experience persistence and resume with a small user/assistant exchange:
+
+   ```bash
+   python - <<'PY'
+   from pathlib import Path
+   from tempfile import TemporaryDirectory
+   from harness.session import Session
+
+   with TemporaryDirectory() as directory:
+       path = Path(directory) / "session.jsonl"
+       session = Session()
+       session.append({"role": "user", "content": "List the services"}, path)
+       session.append({"role": "assistant", "content": "I found 8 services."}, path)
+       resumed = Session.resume(path)
+       print(resumed.session_id, resumed.messages[-1]["content"])
+   PY
+   ```
+
+   The output shows the same session ID and the last persisted answer.
+3. Run `pytest checks/test_session.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

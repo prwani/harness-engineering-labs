@@ -53,10 +53,28 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's telemetry behavior: `pytest checks/test_telemetry.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Create a short trace, estimate usage cost, and inspect redaction:
+
+   ```bash
+   python - <<'PY'
+   from harness.ledger import Usage
+   from harness.telemetry import Tracer, cost_for, redact
+
+   tracer = Tracer()
+   run = tracer.start_run("inspect the catalog")
+   run.child("tool.execute", tool="list_products").close()
+   run.close()
+   print([event["name"] for event in tracer.flatten()])
+   print(f"Estimated cost: ${cost_for(Usage(input_tokens=1000, output_tokens=200), 'claude'):.4f}")
+   print(redact('{"Authorization": "******"}'))
+   PY
+   ```
+
+   The output shows the run/tool span tree, a usage-based estimate, and a
+   redacted authorization value.
+3. Run `pytest checks/test_telemetry.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

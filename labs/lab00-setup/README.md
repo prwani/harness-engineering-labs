@@ -45,7 +45,10 @@ is the plumbing everything else stands on.
 - [`harness/cli/app.py`](harness/cli/app.py) introduces `whoami()`, `ping()`,
   and simulator commands; [`lab.json`](lab.json) declares snapshot capabilities.
 
-## Setup
+## Learner steps
+
+1. Create and activate a virtual environment, install the lab, configure a
+   Foundry deployment in `.env`, and sign in with Azure CLI:
 
 ```bash
 python -m venv .venv
@@ -58,6 +61,16 @@ pytest checks/
 
 Set only non-secret values in `.env`. Authentication is acquired at runtime
 through `DefaultAzureCredential`; do not add API keys.
+
+2. Ask the harness a question and inspect the answer and token counts:
+
+   ```bash
+   harness ask "What is 17 multiplied by 23?"
+   ```
+
+   This is one stateless model call: there are no tools or conversation
+   history yet. `pytest checks/` remains the offline regression check; it does
+   not replace this learner-facing Foundry call.
 
 Start the simulator in a separate terminal before inspecting or resetting it:
 

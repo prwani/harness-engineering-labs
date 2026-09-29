@@ -54,10 +54,30 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's tool-loop behavior: `pytest checks/test_tool_loop.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. From a Git repository, ask a question that requires looking at its files
+   and recent history:
+
+   ```bash
+   harness ask --repo . "Which top-level folders are here, and what is the latest commit?"
+   ```
+
+   The terminal shows each tool call and then the answer. Tools are read-only
+   and restricted to listing files, reading small files, Git status, and Git
+   history; the harness does not expose arbitrary shell execution or writes.
+3. If you are already signed in to Azure CLI, opt into read-only Azure tools:
+
+   ```bash
+   az account show
+   harness ask --repo . --azure "Which Azure account is active and what resources can it see?"
+   ```
+
+   Azure CLI uses its existing login; `--azure` is required before these tools
+   are made available. The command reports only the account name/tenant and
+   up to 20 visible resources.
+4. Run `pytest checks/test_tool_loop.py` for deterministic offline verification,
+   then `pytest checks/` for the full snapshot regression suite. These checks
+   verify behavior without making a live model call.
+5. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

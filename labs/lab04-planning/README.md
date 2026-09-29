@@ -56,10 +56,28 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's planning behavior: `pytest checks/test_planning.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. See the planner/executor boundary and harness-owned todos:
+
+   ```bash
+   python - <<'PY'
+   from harness.planning import ModeSwitch
+   from harness.todos import TodoList
+
+   mode = ModeSwitch()
+   print("Starting mode:", mode.mode, "tools:", mode.spec.tools)
+   todos = TodoList()
+   todos.write(["Inspect the service map", "Check configuration"])
+   todos.complete("Inspect the service map")
+   print(todos.reminder())
+   print("Switched to:", mode.switch("execute").name)
+   PY
+   ```
+
+   The planner starts read-only; the todo reminder keeps unfinished work
+   visible when execution begins.
+3. Run `pytest checks/test_planning.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

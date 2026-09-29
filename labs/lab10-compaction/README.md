@@ -51,10 +51,26 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's compaction behavior: `pytest checks/test_compaction.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Force compaction on a long exchange and inspect what stays in context:
+
+   ```bash
+   python - <<'PY'
+   from harness.compaction import CompactionPolicy, compact
+
+   messages = [{"role": "user", "content": "x" * 200},
+               {"role": "assistant", "content": "y" * 200},
+               {"role": "user", "content": "Keep this recent question."}]
+   kept, handoff = compact(CompactionPolicy(token_threshold=10, keep_recent=1), messages)
+   print("Dropped:", handoff.dropped_message_count)
+   print("Summary:", kept[0]["content"])
+   print("Recent message preserved:", kept[-1] == messages[-1])
+   PY
+   ```
+
+   The compacted transcript retains a summary and the most recent message.
+3. Run `pytest checks/test_compaction.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

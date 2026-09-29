@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 from typer.testing import CliRunner
 
@@ -26,3 +27,18 @@ def test_ping_rejects_missing_endpoint(monkeypatch):
 
     assert result.exit_code != 0
     assert "FOUNDRY_ENDPOINT" in result.output
+
+
+def test_ask_prints_bare_answer_and_usage(monkeypatch):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    monkeypatch.setattr(learner, "create_model_client", lambda: ScriptedModel([Turn(
+        text="Tokyo", usage=SimpleNamespace(input_tokens=5, output_tokens=2)
+    )]))
+
+    result = runner.invoke(app, ["ask", "What is the capital of Japan?"])
+
+    assert result.exit_code == 0
+    assert "Tokyo" in result.output
+    assert "input=5, output=2" in result.output

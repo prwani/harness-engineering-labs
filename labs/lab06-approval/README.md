@@ -59,10 +59,21 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's approval behavior: `pytest checks/test_approval.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Ask the harness for the default policy before any tool is executed:
+
+   ```bash
+   harness approvals list_products
+   harness approvals update_product
+   harness approvals delete_product
+   harness approvals delete_product --reason "remove a duplicate test item"
+   ```
+
+   Reads are allowed, updates ask for human approval, and deletes without a
+   reason are denied. These commands inspect policy only; they do not modify
+   simulator data.
+3. Run `pytest checks/test_approval.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

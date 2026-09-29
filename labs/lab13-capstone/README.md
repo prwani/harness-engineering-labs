@@ -53,10 +53,32 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's capstone behavior: `pytest checks/test_capstone.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Run a small planner → generator → separate evaluator flow and inspect its
+   score and visited nodes:
+
+   ```bash
+   python - <<'PY'
+   from harness.capstone import AblationConfig, EvaluationResult, build_capstone_graph, run_capstone
+   from harness.graph import GraphState
+
+   config = AblationConfig(planning=True, evaluation=True, max_refinements=1)
+   graph = build_capstone_graph(
+       config,
+       lambda state: state.with_data(plan=["inspect product"]),
+       lambda state: f"Draft based on {state.data['plan']}",
+       lambda output, _state: EvaluationResult(True, "contains a plan", 1.0),
+   )
+   result = run_capstone(graph, config, GraphState())
+   print("Visited:", " -> ".join(result.visited))
+   print("Evaluator passed:", result.data["evaluation"].passed)
+   PY
+   ```
+
+   The evaluator is a separate graph step, and the output makes the plan and
+   evaluation path observable.
+3. Run `pytest checks/test_capstone.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

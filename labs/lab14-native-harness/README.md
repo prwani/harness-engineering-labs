@@ -54,10 +54,23 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's native-harness comparison behavior:
-   `pytest checks/test_native_harness.py`. It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Inspect how the harness maps to native Claude Code and Copilot CLI concepts:
+
+   ```bash
+   python - <<'PY'
+   from harness.native_harness import claude_code_mapping, copilot_cli_mapping
+
+   for layer, concept in claude_code_mapping().items():
+       print(f"{layer}: Claude Code → {concept}")
+       print(f"  Copilot CLI → {copilot_cli_mapping()[layer]}")
+   PY
+   ```
+
+   Compare each pair and note which capabilities are provided by the native
+   harness versus defined in an agent or skill.
+3. Run `pytest checks/test_native_harness.py` for deterministic verification,
+   then `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

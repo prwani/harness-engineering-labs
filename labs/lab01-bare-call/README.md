@@ -50,10 +50,19 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's bare-call behavior: `pytest checks/test_bare.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Ask a few questions that need no repository access:
+
+   ```bash
+   harness ask "What is the capital of Japan?"
+   harness ask "What is 17 multiplied by 23?"
+   ```
+
+   Each command makes a fresh, stateless model call. The harness has no tools
+   or memory, so it cannot inspect files or remember the previous question.
+   The answer and provider-reported token counts are printed in the terminal.
+3. Run `pytest checks/test_bare.py` for deterministic offline verification,
+   then `pytest checks/` for the full snapshot regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

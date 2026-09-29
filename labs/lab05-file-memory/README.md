@@ -54,10 +54,29 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's memory behavior: `pytest checks/test_memory.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Save and retrieve a session note without leaving files in the lab directory:
+
+   ```bash
+   python - <<'PY'
+   from pathlib import Path
+   from tempfile import TemporaryDirectory
+   from harness.memory import SessionMemory, snapshot_key, CachedArtifact
+
+   with TemporaryDirectory() as directory:
+       memory = SessionMemory(Path(directory))
+       memory.write("notes.md", "The catalog has 8 products.")
+       print(memory.read("notes.md"))
+   old = snapshot_key("repo-a", "state-1", "inspect catalog")
+   new = snapshot_key("repo-a", "state-2", "inspect catalog")
+   print("Cached result stale after state change:", CachedArtifact(old, "snapshot").is_stale(new))
+   PY
+   ```
+
+   The note is session-local, and changing simulator state invalidates the
+   cached result.
+3. Run `pytest checks/test_memory.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

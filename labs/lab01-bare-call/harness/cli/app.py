@@ -10,9 +10,11 @@ from urllib.request import Request, urlopen
 import typer
 
 from harness.config import HarnessConfig, foundry_token_provider
+from harness.cli.learner import register_ask_command
 from harness.lab_features import load_features
 
 app = typer.Typer(no_args_is_help=True)
+register_ask_command(app)
 sim_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
 

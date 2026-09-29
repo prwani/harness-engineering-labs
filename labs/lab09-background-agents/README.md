@@ -53,10 +53,27 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's sub-agent behavior: `pytest checks/test_subagents.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Split a repository-mapping task across independent child agents:
+
+   ```bash
+   python - <<'PY'
+   from harness.subagents import FanOutPlan, make_task, run_fan_out
+
+   plan = FanOutPlan(concurrency_cap=2)
+   for service in ("product", "order", "makeline"):
+       plan.add(make_task(f"Map the {service} service"))
+   results = run_fan_out(plan, lambda task, _transcript: f"Completed: {task.description}")
+   for result in results:
+       print(result.output)
+   print("Batch sizes:", [len(batch) for batch in plan.batches()])
+   PY
+   ```
+
+   Each task gets an isolated transcript, and the three tasks are split into
+   batches that respect the concurrency cap.
+3. Run `pytest checks/test_subagents.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

@@ -52,10 +52,25 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's skills and tool-discovery behavior:
-   `pytest checks/test_skills.py`. It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Register a local tool and an MCP tool, then discover only the store server's
+   tools:
+
+   ```bash
+   python - <<'PY'
+   from harness.skills import ToolCatalog, register_mcp_tools
+
+   catalog = ToolCatalog()
+   catalog.register("read_file", "Read a repository file.")
+   register_mcp_tools(catalog, "store", [{"name": "list_products", "description": "List products."}])
+   for tool in catalog.discover(namespace="mcp:store"):
+       print(tool.name, "-", tool.description)
+   PY
+   ```
+
+   The discovered name is namespaced, so it cannot collide with `read_file`.
+3. Run `pytest checks/test_skills.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

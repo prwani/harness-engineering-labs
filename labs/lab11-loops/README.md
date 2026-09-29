@@ -52,10 +52,28 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's loop behavior: `pytest checks/test_loops.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Simulate a transient failure and see the retry loop stop after success:
+
+   ```bash
+   python - <<'PY'
+   from harness.loops import RetryLoop
+
+   attempts = {"count": 0}
+   def flaky_read():
+       attempts["count"] += 1
+       if attempts["count"] < 3:
+           raise RuntimeError("temporary service error")
+       return "read completed"
+
+   print(RetryLoop(max_attempts=4).run(flaky_read))
+   print("Attempts:", attempts["count"])
+   PY
+   ```
+
+   The call succeeds on its third attempt; the cap prevents unbounded retries.
+3. Run `pytest checks/test_loops.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

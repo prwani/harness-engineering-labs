@@ -59,10 +59,29 @@ python -m venv .venv
 pip install -e '.[dev]'
 ```
 
-2. Run the focused test for this lab's graph behavior: `pytest checks/test_graph.py`.
-   It uses deterministic fixtures, so it runs offline.
-3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
-4. Inspect the snapshot's declared capabilities: `harness lab-info`.
+2. Run a graph that routes based on the request, then inspect the visited path:
+
+   ```bash
+   python - <<'PY'
+   from harness.graph import Graph, GraphState
+
+   graph = Graph()
+   graph.add_node("classify", lambda state: state.with_data(kind="code"))
+   graph.add_node("code", lambda state: state.with_data(answer="inspect repository"))
+   graph.add_node("data", lambda state: state.with_data(answer="inspect catalog"))
+   graph.add_route("classify", lambda state: state.data["kind"])
+   graph.add_route("code", lambda _state: "END")
+   graph.add_route("data", lambda _state: "END")
+   result = graph.run("classify", GraphState())
+   print("Route:", " -> ".join(result.visited))
+   print("Answer:", result.data["answer"])
+   PY
+   ```
+
+   Only the matching branch runs; the other branch remains unvisited.
+3. Run `pytest checks/test_graph.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 
