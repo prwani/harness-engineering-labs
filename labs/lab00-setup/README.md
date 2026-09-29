@@ -81,6 +81,8 @@ harness sim status
 
 ## Commands
 
+- `harness ask "<question>"` sends one stateless question to the configured
+  Foundry model and prints the response and reported token counts.
 - `harness whoami` verifies that an Entra token can be acquired.
 - `harness ping --provider claude|gpt [--probe]` validates a configured
   deployment and writes the capability record when probed.

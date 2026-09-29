@@ -46,13 +46,19 @@ and can be installed independently.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+1. Create and activate a virtual environment, install the lab, and configure
+   the same non-secret Foundry settings used in Lab 0:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+cp .env.example .env
+az login
 ```
+
+Set the endpoint and deployment values in `.env`; never put credentials or
+API keys there. The local file and Git tools do not require Azure login.
 
 2. From a Git repository, ask a question that requires looking at its files
    and recent history:
@@ -74,15 +80,15 @@ pip install -e '.[dev]'
    Azure CLI uses its existing login; `--azure` is required before these tools
    are made available. The command reports only the account name/tenant and
    up to 20 visible resources.
-4. Run `pytest checks/test_tool_loop.py` for deterministic offline verification,
-   then `pytest checks/` for the full snapshot regression suite. These checks
-   verify behavior without making a live model call.
+4. Run `pytest checks/test_tool_loop.py checks/test_tools.py checks/test_adapters.py`
+   for deterministic offline verification, then `pytest checks/` for the full
+   snapshot regression suite. These checks do not make a live model call.
 5. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
+The direct interactive tool-loop exercise above requires a learner-provisioned
+Foundry model. This snapshot does not include the automated evaluation suite:
 - Foundry tool-call transcript
 
 All live paths must use Entra credentials and must not add API-key configuration.

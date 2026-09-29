@@ -42,13 +42,19 @@ and can be installed independently.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+1. Create and activate a virtual environment, install the lab, and configure
+   the same non-secret Foundry settings used in Lab 0:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
+cp .env.example .env
+az login
 ```
+
+Fill in the endpoint and deployment values in `.env`; never put credentials
+or API keys there.
 
 2. Ask a few questions that need no repository access:
 
@@ -67,7 +73,8 @@ pip install -e '.[dev]'
 ## External integrations
 
 The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
+the commands above support direct questions, but this snapshot does not include
+an automated command for the scored evaluation:
 - Foundry bare-call evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.

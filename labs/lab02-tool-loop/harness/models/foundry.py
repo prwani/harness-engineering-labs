@@ -1,10 +1,10 @@
 """Create a Foundry-backed model client using the current Entra identity."""
 
 from harness.config import HarnessConfig, foundry_token_provider
-from harness.models.adapters import MessagesAdapter, ResponsesAdapter
+from harness.models.adapters import MessagesAdapter, ModelClient, ResponsesAdapter
 
 
-def create_model_client():
+def create_model_client() -> ModelClient:
     from dotenv import load_dotenv
 
     load_dotenv()

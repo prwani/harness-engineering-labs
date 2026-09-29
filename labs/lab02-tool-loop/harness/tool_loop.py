@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from harness.ledger import Usage
 from harness.models import Turn
 from harness.models.adapters import ModelClient
 
@@ -20,14 +21,27 @@ def run_tool_loop(
     on_tool_call: Callable[[str, dict[str, Any]], None] | None = None,
 ) -> Turn:
     messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
+    total_usage = Usage()
     for _ in range(max_iterations):
         turn = client.complete(
             system=system,
             messages=messages,
             tools=tool_definitions or [{"name": name} for name in tools],
         )
+        total_usage = Usage(
+            input_tokens=total_usage.input_tokens + turn.usage.input_tokens,
+            output_tokens=total_usage.output_tokens + turn.usage.output_tokens,
+            cached_tokens=total_usage.cached_tokens + turn.usage.cached_tokens,
+            cache_write_tokens=total_usage.cache_write_tokens + turn.usage.cache_write_tokens,
+        )
         if not turn.tool_calls:
-            return turn
+            return Turn(
+                turn.text,
+                turn.tool_calls,
+                turn.stop,
+                total_usage,
+                turn.raw,
+            )
         messages.append({"role": "assistant", "content": turn.raw or turn.text})
         results = []
         for call in turn.tool_calls:

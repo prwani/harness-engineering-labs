@@ -29,7 +29,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                         f"Tool: {name}({args})", err=True
                     ),
                 )
-            except (OSError, RuntimeError, ValueError) as error:
+            except Exception as error:
                 typer.echo(f"Unable to answer question: {error}", err=True)
                 raise typer.Exit(1) from error
             typer.echo(turn.text)
@@ -55,7 +55,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 )
             else:
                 turn = run_bare(client, question, system)
-        except (OSError, RuntimeError, ValueError) as error:
+        except Exception as error:
             typer.echo(f"Unable to answer question: {error}", err=True)
             raise typer.Exit(1) from error
         typer.echo(turn.text)

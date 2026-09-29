@@ -21,7 +21,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             try:
                 client = create_model_client()
                 turn = ask_with_tools(client, question, repo=repo, azure=azure)
-            except (OSError, RuntimeError, ValueError) as error:
+            except Exception as error:
                 typer.echo(f"Unable to answer question: {error}", err=True)
                 raise typer.Exit(1) from error
             typer.echo(turn.text)

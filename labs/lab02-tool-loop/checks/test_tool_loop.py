@@ -1,18 +1,21 @@
 import pytest
 
+from harness.ledger import Usage
 from harness.models import ScriptedModel, ToolCall, Turn
 from harness.tool_loop import run_tool_loop
 
 
 def test_tool_loop_returns_tool_result_to_next_turn():
     model = ScriptedModel([
-        Turn(text="", tool_calls=[ToolCall("call_1", "echo", {"text": "hello"})], stop="tool"),
-        Turn(text="done"),
+        Turn(text="", tool_calls=[ToolCall("call_1", "echo", {"text": "hello"})], stop="tool",
+             usage=Usage(input_tokens=3, output_tokens=1)),
+        Turn(text="done", usage=Usage(input_tokens=5, output_tokens=2)),
     ])
 
     result = run_tool_loop(model, "task", "system", {"echo": lambda args: args["text"]})
 
     assert result.text == "done"
+    assert result.usage == Usage(input_tokens=8, output_tokens=3)
 
 
 def test_tool_loop_returns_unknown_tool_error():
