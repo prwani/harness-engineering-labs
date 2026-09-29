@@ -78,6 +78,11 @@ pip install -e '.[dev]'
 3. Run `pytest checks/test_planning.py` for deterministic verification, then
    `pytest checks/` for the full regression suite.
 4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's planning feature.
 
 ## External integrations
 

@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 
 import typer
 
+from harness.cli.learner import register_ask_command
 from harness.approval import harness_policy
 from harness.config import HarnessConfig, foundry_token_provider
 from harness.lab_features import load_features
@@ -16,6 +17,7 @@ from harness.memory import SessionMemory
 from harness.planning import ModeSwitch
 
 app = typer.Typer(no_args_is_help=True)
+register_ask_command(app)
 sim_app = typer.Typer(no_args_is_help=True)
 memory_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
