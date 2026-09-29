@@ -49,3 +49,67 @@ def test_scripted_model_reports_exhaustion():
     assert model.complete().text == "done"
     with pytest.raises(RuntimeError, match="ran out"):
         model.complete()
+
+
+def test_messages_adapter_converts_tool_results_and_schemas():
+    received = {}
+    response = SimpleNamespace(content=[], stop_reason="end", usage=None)
+
+    def create(**kwargs):
+        received.update(kwargs)
+        return response
+
+    adapter = MessagesAdapter(
+        SimpleNamespace(messages=SimpleNamespace(create=create)), "model"
+    )
+    adapter.complete(
+        system="",
+        messages=[
+            {"role": "user", "content": "read a file"},
+            {"role": "assistant", "content": []},
+            {"role": "tool", "content": [{"call_id": "call_1", "output": "contents"}]},
+        ],
+        tools=[{
+            "name": "read_file",
+            "description": "Read a file",
+            "input_schema": {"type": "object", "properties": {}},
+        }],
+    )
+
+    assert received["messages"][-1]["role"] == "user"
+    assert received["messages"][-1]["content"][0]["tool_use_id"] == "call_1"
+    assert received["tools"][0]["input_schema"]["type"] == "object"
+
+
+def test_responses_adapter_converts_tool_results_and_schemas():
+    received = {}
+    response = SimpleNamespace(output=[], status="completed", usage=None)
+
+    def create(**kwargs):
+        received.update(kwargs)
+        return response
+
+    adapter = ResponsesAdapter(
+        SimpleNamespace(responses=SimpleNamespace(create=create)), "model"
+    )
+    adapter.complete(
+        system="",
+        messages=[
+            {"role": "user", "content": "read a file"},
+            {"role": "assistant", "content": [{
+                "type": "function_call", "call_id": "call_1", "name": "read_file",
+                "arguments": '{"path":"README.md"}',
+            }]},
+            {"role": "tool", "content": [{"call_id": "call_1", "output": "contents"}]},
+        ],
+        tools=[{
+            "name": "read_file",
+            "description": "Read a file",
+            "input_schema": {"type": "object", "properties": {}},
+        }],
+    )
+
+    assert received["input"][-1] == {
+        "type": "function_call_output", "call_id": "call_1", "output": "contents",
+    }
+    assert received["tools"][0]["parameters"]["type"] == "object"

@@ -15,7 +15,7 @@ from harness.lab_features import load_features
 from harness.planning import ModeSwitch
 
 app = typer.Typer(no_args_is_help=True)
-register_ask_command(app)
+register_ask_command(app, tools_enabled=True)
 sim_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
 

@@ -52,6 +52,15 @@ The latter must be **denied**; do not approve or run it yourself. The CLI
 prints tool and hook events, but questions are independent turns until Lab 3.
 `--repo PATH` optionally changes the tools' starting directory.
 
+While a question is answered, the CLI shows a spinner with the elapsed time
+on stderr (plain `... waiting for model (LLM call N)` lines when output is
+redirected). Each answer ends with the total time next to the token counts and
+a run summary, for example
+`Summary: llm_calls=2, tool_calls=2, denied=1, tool_errors=0, model_time=4.2s, tool_time=0.1s`.
+Model calls usually dominate the time; each tool batch, including a denied
+one, costs another LLM call. `list_files` skips `.git`, `.venv`,
+`node_modules`, and `__pycache__` without walking them.
+
 Run the deterministic checks without cloud access:
 
 ```powershell
@@ -65,6 +74,5 @@ other runtime behavior are outside this small example policy. Do not use it
 with untrusted input, production Azure resources, or sensitive repositories.
 Lab 6 adds human approval as a distinct policy decision.
 
-The already-published Labs 3 onward were created before this 2A/2B split and
-have not yet inherited Lab 2B's hooks; do not treat those older snapshots as
-an upgrade of this command policy.
+Labs 3 onward retain this snapshot's hooked tool loop, progress indicator,
+and run summary for `harness ask`.

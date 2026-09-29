@@ -73,6 +73,13 @@ API keys there. The local file and Git tools do not require Azure login.
    history is introduced in Lab 3. For a single question without entering the
    prompt, use `harness ask "Use Git to show the latest commit"`.
 
+   While the harness works, `harness ask` shows a spinner with the elapsed time
+   on stderr (plain `... waiting for model (LLM call N)` lines when output is
+   redirected). Each answer ends with the total time next to the token counts
+   and a summary such as
+   `Summary: llm_calls=2, tool_calls=1, tool_errors=0, model_time=4.2s, tool_time=0.1s`.
+   Model calls usually dominate; every tool result costs another LLM call.
+
    The current directory is used by default. Use `--repo PATH` only when the
    tools should start in another working directory.
 

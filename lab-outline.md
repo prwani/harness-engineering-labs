@@ -234,7 +234,7 @@ Keeping these separate avoids a floor effect in which "can't attempt" and "attem
 - the task text and task order
 - the budget caps
 
-The proposed scorecard tags follow the lab number (`h1`, `h3`, etc.); the Lab 2 split uses `h2a` for the unrestricted baseline and `h2b` for hooks. Existing downstream snapshots have not yet inherited Lab 2B's hooks. Lab 0 has no tag, and Lab 1 has no predecessor to compare against.
+The proposed scorecard tags follow the lab number (`h1`, `h3`, etc.); the Lab 2 split uses `h2a` for the unrestricted baseline and `h2b` for hooks. Labs 3 onward retain Lab 2B's hooked tool loop for `harness ask`. Lab 0 has no tag, and Lab 1 has no predecessor to compare against.
 
 **3. Feature flags inside a version.** Some labs add more than one mechanism. Each such lab exposes flags so that every mechanism can be measured on its own, with the others held fixed:
 
@@ -673,7 +673,7 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Verify:** offline scripted model calls prove allowed reads execute, denied calls do not, both retain their IDs, and bad history fails before the next model call. Compare these observations with Lab 2A. The snapshots are standalone.
 
-**Next:** Lab 3 adds durable sessions. The existing later snapshots predate this split and have not yet inherited Lab 2B hooks. Agent specifications and richer policies remain separate future work.
+**Next:** Lab 3 adds durable sessions. Labs 3 onward carry this hooked tool loop forward for `harness ask`. Agent specifications and richer policies remain separate future work.
 
 ### Lab 3 — History and sessions
 

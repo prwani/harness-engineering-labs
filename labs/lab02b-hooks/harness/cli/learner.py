@@ -2,7 +2,7 @@
 
 import typer
 
-from harness.cli.interactive import render_turn, run_interactive
+from harness.cli.interactive import Activity, render_turn, run_interactive
 from harness.models.foundry import create_model_client
 
 
@@ -11,6 +11,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
         from pathlib import Path
 
         from harness.learner import ask_with_tools
+        from harness.tool_loop import LoopStats
 
         @app.command("ask")
         def ask(
@@ -25,23 +26,35 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             try:
                 client = create_model_client()
 
-                def answer(prompt: str):
-                    return ask_with_tools(
-                        client,
-                        prompt,
-                        repo=repo or Path.cwd(),
-                        on_tool_call=lambda name, args: typer.echo(
-                            f"Tool: {name}({args})", err=True
-                        ),
-                        on_hook_denial=lambda name, reason: typer.echo(
-                            f"Hook: denied {name}: {reason}", err=True
-                        ),
-                    )
+                def respond(prompt: str) -> None:
+                    stats = LoopStats()
+                    with Activity() as activity:
+
+                        def on_model_call(number: int) -> None:
+                            activity.status(f"waiting for model (LLM call {number})")
+
+                        def on_tool_call(name: str, args: dict) -> None:
+                            activity.echo(f"Tool: {name}({args})")
+                            activity.status(f"running {name}", announce=False)
+
+                        def on_hook_denial(name: str, reason: str) -> None:
+                            activity.echo(f"Hook: denied {name}: {reason}")
+
+                        turn = ask_with_tools(
+                            client,
+                            prompt,
+                            repo=repo or Path.cwd(),
+                            on_tool_call=on_tool_call,
+                            on_hook_denial=on_hook_denial,
+                            on_model_call=on_model_call,
+                            stats=stats,
+                        )
+                    render_turn(turn, elapsed=activity.elapsed, stats=stats)
 
                 if question is None:
-                    run_interactive(answer)
+                    run_interactive(respond)
                 else:
-                    render_turn(answer(question))
+                    respond(question)
             except Exception as error:
                 typer.echo(f"Unable to answer question: {error}", err=True)
                 raise typer.Exit(1) from error
@@ -71,10 +84,16 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             else:
                 answer = lambda prompt: run_bare(client, prompt, system)
 
+            def respond(prompt: str) -> None:
+                with Activity() as activity:
+                    activity.status("waiting for model")
+                    turn = answer(prompt)
+                render_turn(turn, elapsed=activity.elapsed)
+
             if question is None:
-                run_interactive(answer)
+                run_interactive(respond)
             else:
-                render_turn(answer(question))
+                respond(question)
         except Exception as error:
             typer.echo(f"Unable to answer question: {error}", err=True)
             raise typer.Exit(1) from error

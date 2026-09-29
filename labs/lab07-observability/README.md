@@ -80,6 +80,11 @@ pip install -e '.[dev]'
    Run `harness ask` to ask repeated questions and type `/exit` to leave; use
    `harness ask "<question>"` for one-shot use. Each question is an independent
    turn; the Python example above exercises this lab's observability features.
+   `ask` retains Lab 2B's repository and CLI tools behind the same
+   `pre_tool`/`pre_model` hooks (shell denied; Git and Azure CLI limited to
+   a few read commands), shows a spinner while it works, and ends each
+   answer with the total time and a `Summary:` of LLM and tool calls.
+   `--repo PATH` changes the tools' starting directory.
 
 ## External integrations
 
