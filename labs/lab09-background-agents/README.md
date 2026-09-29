@@ -43,20 +43,47 @@ and can be installed independently.
 - The same module adds `FanOutPlan` and `run_fan_out()` to group tasks into
   concurrency-capped batches.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Split a repository-mapping task across independent child agents:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.subagents import FanOutPlan, make_task, run_fan_out
 
+   plan = FanOutPlan(concurrency_cap=2)
+   for service in ("product", "order", "makeline"):
+       plan.add(make_task(f"Map the {service} service"))
+   results = run_fan_out(plan, lambda task, _transcript: f"Completed: {task.description}")
+   for result in results:
+       print(result.output)
+   print("Batch sizes:", [len(batch) for batch in plan.batches()])
+   PY
+   ```
+
+   Each task gets an isolated transcript, and the three tasks are split into
+   batches that respect the concurrency cap.
+3. Run `pytest checks/test_subagents.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's background agents.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - ACA sandbox execution
 
 All live paths must use Entra credentials and must not add API-key configuration.

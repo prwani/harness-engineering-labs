@@ -43,20 +43,52 @@ and can be installed independently.
 - The same module adds `run_capstone()` for graph execution and `AblationRun`
   for summarizing the enabled capabilities and result.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Run a small planner → generator → separate evaluator flow and inspect its
+   score and visited nodes:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.capstone import AblationConfig, EvaluationResult, build_capstone_graph, run_capstone
+   from harness.graph import GraphState
 
+   config = AblationConfig(planning=True, evaluation=True, max_refinements=1)
+   graph = build_capstone_graph(
+       config,
+       lambda state: state.with_data(plan=["inspect product"]),
+       lambda state: f"Draft based on {state.data['plan']}",
+       lambda output, _state: EvaluationResult(True, "contains a plan", 1.0),
+   )
+   result = run_capstone(graph, config, GraphState())
+   print("Visited:", " -> ".join(result.visited))
+   print("Evaluator passed:", result.data["evaluation"].passed)
+   PY
+   ```
+
+   The evaluator is a separate graph step, and the output makes the plan and
+   evaluation path observable.
+3. Run `pytest checks/test_capstone.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's capstone workflow.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - full Foundry evaluation suite
 
 All live paths must use Entra credentials and must not add API-key configuration.

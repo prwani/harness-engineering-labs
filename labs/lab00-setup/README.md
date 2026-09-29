@@ -45,7 +45,10 @@ is the plumbing everything else stands on.
 - [`harness/cli/app.py`](harness/cli/app.py) introduces `whoami()`, `ping()`,
   and simulator commands; [`lab.json`](lab.json) declares snapshot capabilities.
 
-## Setup
+## Learner steps
+
+1. Create and activate a virtual environment, install the lab, configure a
+   Foundry deployment in `.env`, and sign in with Azure CLI:
 
 ```bash
 python -m venv .venv
@@ -59,6 +62,19 @@ pytest checks/
 Set only non-secret values in `.env`. Authentication is acquired at runtime
 through `DefaultAzureCredential`; do not add API keys.
 
+2. Open the interactive prompt, ask multiple questions, and leave the prompt:
+
+   ```bash
+   harness ask
+   ```
+
+   Enter a question at `You>`; each `Assistant>` response and its token counts
+   remain visible above the next prompt. Enter `/exit` to return to your shell.
+   You can also pass one question directly, such as
+   `harness ask "What is 17 multiplied by 23?"`. Each turn is a fresh model
+   call without tools or conversation history. `pytest checks/` remains the
+   offline regression check; it does not replace this learner-facing Foundry call.
+
 Start the simulator in a separate terminal before inspecting or resetting it:
 
 ```bash
@@ -68,6 +84,8 @@ harness sim status
 
 ## Commands
 
+- `harness ask` opens a persistent question prompt; `harness ask "<question>"`
+  sends one stateless question to the configured Foundry model.
 - `harness whoami` verifies that an Entra token can be acquired.
 - `harness ping --provider claude|gpt [--probe]` validates a configured
   deployment and writes the capability record when probed.

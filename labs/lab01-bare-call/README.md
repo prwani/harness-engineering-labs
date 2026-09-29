@@ -40,20 +40,45 @@ and can be installed independently.
 - [`checks/test_bare.py`](checks/test_bare.py) checks that the call returns a
   turn without tool calls.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, install the lab, and configure
+   the same non-secret Foundry settings used in Lab 0:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
+cp .env.example .env
+az login
 ```
 
-## Live validation (not run locally)
+Fill in the endpoint and deployment values in `.env`; never put credentials
+or API keys there.
 
-The following integrations require learner-provisioned credentials and resources:
+2. Open the persistent prompt and ask several questions that need no
+   repository access:
 
+   ```bash
+   harness ask
+   ```
+
+   At `You>`, try `What is the capital of Japan?` and then `What is 17
+   multiplied by 23?`. Each `Assistant>` response is printed above the
+   reappearing prompt, along with provider-reported token counts. Enter
+   `/exit` to return to your shell. Each turn is a fresh, stateless model call:
+   the harness has no tools or memory, so it cannot inspect files or remember
+   the previous question. To run a single turn without opening the prompt, use
+   `harness ask "What is the capital of Japan?"`.
+3. Run `pytest checks/test_bare.py` for deterministic offline verification,
+   then `pytest checks/` for the full snapshot regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+the commands above support direct questions, but this snapshot does not include
+an automated command for the scored evaluation:
 - Foundry bare-call evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.

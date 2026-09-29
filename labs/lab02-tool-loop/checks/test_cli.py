@@ -26,3 +26,35 @@ def test_ping_rejects_missing_endpoint(monkeypatch):
 
     assert result.exit_code != 0
     assert "FOUNDRY_ENDPOINT" in result.output
+
+
+def test_ask_uses_read_only_tool_loop(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    monkeypatch.setattr(learner, "create_model_client", lambda: ScriptedModel([Turn(text="answer")]))
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "What is in this repository?"])
+
+    assert result.exit_code == 0
+    assert "answer" in result.output
+    assert "Tokens:" in result.output
+
+
+def test_ask_without_question_keeps_repository_prompt_available(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    questions = iter(["What is in this repository?", "Show the latest commit.", "/exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(questions))
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([Turn(text="Files found."), Turn(text="Commit found.")]),
+    )
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert result.output.count("Assistant>") == 2
+    assert "Files found." in result.output
+    assert "Commit found." in result.output

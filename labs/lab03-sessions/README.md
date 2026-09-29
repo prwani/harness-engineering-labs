@@ -37,20 +37,48 @@ and can be installed independently.
   JSONL-backed message history and `Session.resume()` to reconstruct it while
   checking that all entries belong to the same session.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Experience persistence and resume with a small user/assistant exchange:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from pathlib import Path
+   from tempfile import TemporaryDirectory
+   from harness.session import Session
 
+   with TemporaryDirectory() as directory:
+       path = Path(directory) / "session.jsonl"
+       session = Session()
+       session.append({"role": "user", "content": "List the services"}, path)
+       session.append({"role": "assistant", "content": "I found 8 services."}, path)
+       resumed = Session.resume(path)
+       print(resumed.session_id, resumed.messages[-1]["content"])
+   PY
+   ```
+
+   The output shows the same session ID and the last persisted answer.
+3. Run `pytest checks/test_session.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above demonstrates this lab's session persistence.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Foundry resumed-session evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.

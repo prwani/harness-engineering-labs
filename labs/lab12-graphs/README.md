@@ -49,20 +49,49 @@ and can be installed independently.
   introduce conditional routing, replay protection, and optional human route
   confirmation.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Run a graph that routes based on the request, then inspect the visited path:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.graph import Graph, GraphState
 
+   graph = Graph()
+   graph.add_node("classify", lambda state: state.with_data(kind="code"))
+   graph.add_node("code", lambda state: state.with_data(answer="inspect repository"))
+   graph.add_node("data", lambda state: state.with_data(answer="inspect catalog"))
+   graph.add_route("classify", lambda state: state.data["kind"])
+   graph.add_route("code", lambda _state: "END")
+   graph.add_route("data", lambda _state: "END")
+   result = graph.run("classify", GraphState())
+   print("Route:", " -> ".join(result.visited))
+   print("Answer:", result.data["answer"])
+   PY
+   ```
+
+   Only the matching branch runs; the other branch remains unvisited.
+3. Run `pytest checks/test_graph.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's graph feature.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - ACA code executor
 
 All live paths must use Entra credentials and must not add API-key configuration.

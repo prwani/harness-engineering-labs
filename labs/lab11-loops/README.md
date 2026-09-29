@@ -42,20 +42,48 @@ and can be installed independently.
   `PollingLoop`, and `RefinementLoop` with bounded retry, feedback, polling,
   and improvement behavior; `LoopExhaustedError` marks unsuccessful exits.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Simulate a transient failure and see the retry loop stop after success:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.loops import RetryLoop
 
+   attempts = {"count": 0}
+   def flaky_read():
+       attempts["count"] += 1
+       if attempts["count"] < 3:
+           raise RuntimeError("temporary service error")
+       return "read completed"
+
+   print(RetryLoop(max_attempts=4).run(flaky_read))
+   print("Attempts:", attempts["count"])
+   PY
+   ```
+
+   The call succeeds on its third attempt; the cap prevents unbounded retries.
+3. Run `pytest checks/test_loops.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's retry loops.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - live retry and polling behavior
 
 All live paths must use Entra credentials and must not add API-key configuration.

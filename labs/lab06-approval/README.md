@@ -49,20 +49,41 @@ and can be installed independently.
 - [`harness/cli/app.py`](harness/cli/app.py) adds `approvals()` to inspect a
   tool's default policy decision.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Ask the harness for the default policy before any tool is executed:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   harness approvals list_products
+   harness approvals update_product
+   harness approvals delete_product
+   harness approvals delete_product --reason "remove a duplicate test item"
+   ```
 
+   Reads are allowed, updates ask for human approval, and deletes without a
+   reason are denied. These commands inspect policy only; they do not modify
+   simulator data.
+3. Run `pytest checks/test_approval.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's approval feature.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - human approval flow
 
 All live paths must use Entra credentials and must not add API-key configuration.

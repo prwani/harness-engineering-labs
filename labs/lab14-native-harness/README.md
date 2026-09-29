@@ -44,20 +44,43 @@ and can be installed independently.
 - The same module adds `LAYER_MAPPING`, `claude_code_mapping()`, and
   `copilot_cli_mapping()` as reference mappings to native harness concepts.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Inspect how the harness maps to native Claude Code and Copilot CLI concepts:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.native_harness import claude_code_mapping, copilot_cli_mapping
 
+   for layer, concept in claude_code_mapping().items():
+       print(f"{layer}: Claude Code → {concept}")
+       print(f"  Copilot CLI → {copilot_cli_mapping()[layer]}")
+   PY
+   ```
+
+   Compare each pair and note which capabilities are provided by the native
+   harness versus defined in an agent or skill.
+3. Run `pytest checks/test_native_harness.py` for deterministic verification,
+   then `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's native-harness mapping.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Claude Code and Copilot CLI runs
 
 All live paths must use Entra credentials and must not add API-key configuration.

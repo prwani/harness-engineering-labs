@@ -41,20 +41,46 @@ and can be installed independently.
 - The same module adds `build_repo_map()` for a stable index of files and
   directories.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Force compaction on a long exchange and inspect what stays in context:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.compaction import CompactionPolicy, compact
 
+   messages = [{"role": "user", "content": "x" * 200},
+               {"role": "assistant", "content": "y" * 200},
+               {"role": "user", "content": "Keep this recent question."}]
+   kept, handoff = compact(CompactionPolicy(token_threshold=10, keep_recent=1), messages)
+   print("Dropped:", handoff.dropped_message_count)
+   print("Summary:", kept[0]["content"])
+   print("Recent message preserved:", kept[-1] == messages[-1])
+   PY
+   ```
+
+   The compacted transcript retains a summary and the most recent message.
+3. Run `pytest checks/test_compaction.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's compaction feature.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - long-running Foundry context profile
 
 All live paths must use Entra credentials and must not add API-key configuration.

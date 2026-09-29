@@ -43,20 +43,48 @@ and can be installed independently.
 - The same module adds `redact()` for sensitive tool-output patterns and
   `cache_breakpoints()` for estimating stable prompt boundaries.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Create a short trace, estimate usage cost, and inspect redaction:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from harness.ledger import Usage
+   from harness.telemetry import Tracer, cost_for, redact
 
+   tracer = Tracer()
+   run = tracer.start_run("inspect the catalog")
+   run.child("tool.execute", tool="list_products").close()
+   run.close()
+   print([event["name"] for event in tracer.flatten()])
+   print(f"Estimated cost: ${cost_for(Usage(input_tokens=1000, output_tokens=200), 'claude'):.4f}")
+   print(redact('{"Authorization": "******"}'))
+   PY
+   ```
+
+   The output shows the run/tool span tree, a usage-based estimate, and a
+   redacted authorization value.
+3. Run `pytest checks/test_telemetry.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's observability features.
+
+## External integrations
+
+The following integrations require learner-provisioned credentials and resources;
+this snapshot does not include commands to run them:
 - Application Insights traces
 - Foundry prompt cache probe
 

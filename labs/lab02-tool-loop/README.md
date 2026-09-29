@@ -44,20 +44,56 @@ and can be installed independently.
   calls the model, dispatches named tools, pairs results with call IDs, and stops
   on a final turn or the iteration bound.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, install the lab, and configure
+   the same non-secret Foundry settings used in Lab 0:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
+cp .env.example .env
+az login
 ```
 
-## Live validation (not run locally)
+Set the endpoint and deployment values in `.env`; never put credentials or
+API keys there. The local file and Git tools do not require Azure login.
 
-The following integrations require learner-provisioned credentials and resources:
+2. From a Git repository, open the persistent prompt and ask questions that
+   require looking at its files and recent history:
 
+   ```bash
+   harness ask --repo .
+   ```
+
+   Ask `Which top-level folders are here?`, then ask `What is the latest
+   commit?`. Each tool call and `Assistant>` response appears above the
+   reappearing `You>` prompt. Enter `/exit` to return to your shell. Questions
+   are independent turns; session history is introduced in Lab 3. Tools are
+   read-only and restricted to listing files, reading small files, Git status,
+   and Git history; the harness does not expose arbitrary shell execution or
+   writes. For a single question without entering the prompt, use
+   `harness ask --repo . "What is the latest commit?"`.
+3. If you are already signed in to Azure CLI, opt into read-only Azure tools:
+
+   ```bash
+   az account show
+   harness ask --repo . --azure "Which Azure account is active and what resources can it see?"
+   ```
+
+   Azure CLI uses its existing login; `--azure` is required before these tools
+   are made available. The command reports only the account name/tenant and
+   up to 20 visible resources.
+4. Run `pytest checks/test_tool_loop.py checks/test_tools.py checks/test_adapters.py`
+   for deterministic offline verification, then `pytest checks/` for the full
+   snapshot regression suite. These checks do not make a live model call.
+5. Inspect the snapshot's declared capabilities with `harness lab-info`.
+
+## External integrations
+
+The direct interactive tool-loop exercise above requires a learner-provisioned
+Foundry model. This snapshot does not include the automated evaluation suite:
 - Foundry tool-call transcript
 
 All live paths must use Entra credentials and must not add API-key configuration.

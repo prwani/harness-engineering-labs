@@ -44,20 +44,49 @@ and can be installed independently.
 - [`harness/cli/app.py`](harness/cli/app.py) adds `memory_ls()` and
   `memory_show()` to inspect session-memory files.
 
-## Offline verification
+## Learner steps
+
+1. Create and activate a virtual environment, then install the lab:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/
-harness lab-info
 ```
 
-## Live validation (not run locally)
+2. Save and retrieve a session note without leaving files in the lab directory:
 
-The following integrations require learner-provisioned credentials and resources:
+   ```bash
+   python - <<'PY'
+   from pathlib import Path
+   from tempfile import TemporaryDirectory
+   from harness.memory import SessionMemory, snapshot_key, CachedArtifact
 
+   with TemporaryDirectory() as directory:
+       memory = SessionMemory(Path(directory))
+       memory.write("notes.md", "The catalog has 8 products.")
+       print(memory.read("notes.md"))
+   old = snapshot_key("repo-a", "state-1", "inspect catalog")
+   new = snapshot_key("repo-a", "state-2", "inspect catalog")
+   print("Cached result stale after state change:", CachedArtifact(old, "snapshot").is_stale(new))
+   PY
+   ```
+
+   The note is session-local, and changing simulator state invalidates the
+   cached result.
+3. Run `pytest checks/test_memory.py` for deterministic verification, then
+   `pytest checks/` for the full regression suite.
+4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
+   fill in the endpoint and deployment settings, and sign in with `az login`.
+   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
+   `harness ask "<question>"` for one-shot use. Each question is an independent
+   turn; the Python example above exercises this lab's file-memory feature.
+
+## External integrations
+
+The following integration requires learner-provisioned credentials and resources;
+this snapshot does not include a command to run it:
 - Foundry memory reuse evaluation
 
 All live paths must use Entra credentials and must not add API-key configuration.
