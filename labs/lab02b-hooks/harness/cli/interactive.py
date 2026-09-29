@@ -48,7 +48,8 @@ class Activity:
 
     @property
     def elapsed(self) -> float:
-        return (self._finished or perf_counter()) - self._started
+        end = perf_counter() if self._finished is None else self._finished
+        return end - self._started
 
     def status(self, label: str, *, announce: bool = True) -> None:
         """Set the spinner label; print it once when no spinner is shown."""

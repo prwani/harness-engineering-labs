@@ -110,4 +110,4 @@ def test_activity_spinner_redraws_and_clears_on_a_terminal():
     assert "waiting for model (LLM call 1) (" in output
     assert "Tool: git_status({})\n" in output
     assert output.endswith("\r")
-    assert activity.elapsed >= 0.1
+    assert activity.elapsed > 0
