@@ -42,3 +42,22 @@ def test_ask_prints_bare_answer_and_usage(monkeypatch):
     assert result.exit_code == 0
     assert "Tokyo" in result.output
     assert "input=5, output=2" in result.output
+
+
+def test_ask_without_question_keeps_prompt_available(monkeypatch):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, Turn
+
+    questions = iter(["What is 2 + 2?", "What is 3 + 3?", "/quit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(questions))
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([Turn(text="4"), Turn(text="6")]),
+    )
+
+    result = runner.invoke(app, ["ask"])
+
+    assert result.exit_code == 0
+    assert result.output.count("Assistant>") == 2
+    assert "4" in result.output
+    assert "6" in result.output

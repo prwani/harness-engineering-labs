@@ -56,16 +56,20 @@ az login
 Fill in the endpoint and deployment values in `.env`; never put credentials
 or API keys there.
 
-2. Ask a few questions that need no repository access:
+2. Open the persistent prompt and ask several questions that need no
+   repository access:
 
    ```bash
-   harness ask "What is the capital of Japan?"
-   harness ask "What is 17 multiplied by 23?"
+   harness ask
    ```
 
-   Each command makes a fresh, stateless model call. The harness has no tools
-   or memory, so it cannot inspect files or remember the previous question.
-   The answer and provider-reported token counts are printed in the terminal.
+   At `You>`, try `What is the capital of Japan?` and then `What is 17
+   multiplied by 23?`. Each `Assistant>` response is printed above the
+   reappearing prompt, along with provider-reported token counts. Enter
+   `/exit` to return to your shell. Each turn is a fresh, stateless model call:
+   the harness has no tools or memory, so it cannot inspect files or remember
+   the previous question. To run a single turn without opening the prompt, use
+   `harness ask "What is the capital of Japan?"`.
 3. Run `pytest checks/test_bare.py` for deterministic offline verification,
    then `pytest checks/` for the full snapshot regression suite.
 4. Inspect the snapshot's declared capabilities with `harness lab-info`.

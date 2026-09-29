@@ -60,16 +60,21 @@ az login
 Set the endpoint and deployment values in `.env`; never put credentials or
 API keys there. The local file and Git tools do not require Azure login.
 
-2. From a Git repository, ask a question that requires looking at its files
-   and recent history:
+2. From a Git repository, open the persistent prompt and ask questions that
+   require looking at its files and recent history:
 
    ```bash
-   harness ask --repo . "Which top-level folders are here, and what is the latest commit?"
+   harness ask --repo .
    ```
 
-   The terminal shows each tool call and then the answer. Tools are read-only
-   and restricted to listing files, reading small files, Git status, and Git
-   history; the harness does not expose arbitrary shell execution or writes.
+   Ask `Which top-level folders are here?`, then ask `What is the latest
+   commit?`. Each tool call and `Assistant>` response appears above the
+   reappearing `You>` prompt. Enter `/exit` to return to your shell. Questions
+   are independent turns; session history is introduced in Lab 3. Tools are
+   read-only and restricted to listing files, reading small files, Git status,
+   and Git history; the harness does not expose arbitrary shell execution or
+   writes. For a single question without entering the prompt, use
+   `harness ask --repo . "What is the latest commit?"`.
 3. If you are already signed in to Azure CLI, opt into read-only Azure tools:
 
    ```bash

@@ -2,6 +2,7 @@
 
 import typer
 
+from harness.cli.interactive import render_turn, run_interactive
 from harness.models.foundry import create_model_client
 
 
@@ -13,32 +14,43 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
 
         @app.command("ask")
         def ask(
-            question: str,
+            question: str | None = typer.Argument(
+                None, help="Question to ask; omit to open the interactive prompt."
+            ),
             repo: Path | None = typer.Option(None, "--repo", help="Repository root for read-only tools."),
             azure: bool = typer.Option(False, "--azure", help="Allow read-only Azure CLI tools."),
         ) -> None:
-            """Ask a question; use read-only repository and optional Azure tools."""
+            """Ask a question or open the interactive prompt."""
             try:
                 client = create_model_client()
-                turn = ask_with_tools(
-                    client,
-                    question,
-                    repo=repo or Path.cwd(),
-                    azure=azure,
-                    on_tool_call=lambda name, args: typer.echo(
-                        f"Tool: {name}({args})", err=True
-                    ),
-                )
+
+                def answer(prompt: str):
+                    return ask_with_tools(
+                        client,
+                        prompt,
+                        repo=repo or Path.cwd(),
+                        azure=azure,
+                        on_tool_call=lambda name, args: typer.echo(
+                            f"Tool: {name}({args})", err=True
+                        ),
+                    )
+
+                if question is None:
+                    run_interactive(answer)
+                else:
+                    render_turn(answer(question))
             except Exception as error:
                 typer.echo(f"Unable to answer question: {error}", err=True)
                 raise typer.Exit(1) from error
-            typer.echo(turn.text)
-            typer.echo(f"Tokens: input={turn.usage.input_tokens}, output={turn.usage.output_tokens}")
         return
 
     @app.command("ask")
-    def ask(question: str) -> None:
-        """Ask one stateless question without tools or memory."""
+    def ask(
+        question: str | None = typer.Argument(
+            None, help="Question to ask; omit to open the interactive prompt."
+        ),
+    ) -> None:
+        """Ask a question or open the interactive prompt."""
         try:
             client = create_model_client()
             system = (
@@ -48,15 +60,18 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             try:
                 from harness.bare import run_bare
             except ImportError:
-                turn = client.complete(
+                answer = lambda prompt: client.complete(
                     system=system,
-                    messages=[{"role": "user", "content": question}],
+                    messages=[{"role": "user", "content": prompt}],
                     tools=[],
                 )
             else:
-                turn = run_bare(client, question, system)
+                answer = lambda prompt: run_bare(client, prompt, system)
+
+            if question is None:
+                run_interactive(answer)
+            else:
+                render_turn(answer(question))
         except Exception as error:
             typer.echo(f"Unable to answer question: {error}", err=True)
             raise typer.Exit(1) from error
-        typer.echo(turn.text)
-        typer.echo(f"Tokens: input={turn.usage.input_tokens}, output={turn.usage.output_tokens}")
