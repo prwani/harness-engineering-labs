@@ -44,17 +44,18 @@ and can be installed independently.
 
 ## Learner steps
 
+1. Create and activate a virtual environment, then install the lab:
+
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest checks/test_loops.py
-pytest checks/
-harness lab-info
 ```
 
-The focused test runs this lab's loop behavior with deterministic fixtures;
-the full suite checks this snapshot and all earlier labs. Both run offline.
+2. Run the focused test for this lab's loop behavior: `pytest checks/test_loops.py`.
+   It uses deterministic fixtures, so it runs offline.
+3. Run all checks for this snapshot and earlier labs: `pytest checks/`.
+4. Inspect the snapshot's declared capabilities: `harness lab-info`.
 
 ## External integrations
 
