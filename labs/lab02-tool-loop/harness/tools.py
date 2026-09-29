@@ -61,12 +61,27 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
         if not directory.is_dir():
             raise ValueError("Requested path is not a directory.")
         ignored = {".git", ".venv", "node_modules", "__pycache__"}
+        if any(part in ignored for part in directory.relative_to(root).parts):
+            return "(no files found)"
+
+        def walk(current: Path):
+            # Prune ignored directories instead of enumerating then filtering them;
+            # a local .venv alone can contain tens of thousands of files.
+            try:
+                entries = sorted(current.iterdir())
+            except OSError:
+                return
+            for path in entries:
+                if path.name in ignored or (path.is_symlink() and path.is_dir()):
+                    continue
+                if path.is_dir():
+                    yield from walk(path)
+                elif path.is_file():
+                    yield path
+
         results = []
-        for path in sorted(directory.rglob("*")):
-            if any(part in ignored for part in path.relative_to(root).parts):
-                continue
-            if path.is_file():
-                results.append(path.relative_to(root).as_posix())
+        for path in walk(directory):
+            results.append(path.relative_to(root).as_posix())
             if len(results) == 100:
                 break
         return "\n".join(results) or "(no files found)"

@@ -58,3 +58,34 @@ def test_learner_question_runs_read_tool_and_returns_answer(tmp_path):
     result = ask_with_tools(client, "Summarize README.md", repo=tmp_path)
 
     assert result.text == "The README describes a sample project."
+
+
+def test_list_files_skips_ignored_directories_without_walking_them(monkeypatch, tmp_path):
+    (tmp_path / ".venv" / "lib").mkdir(parents=True)
+    (tmp_path / ".venv" / "lib" / "site.py").write_text("")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("")
+    (tmp_path / "README.md").write_text("")
+    visited = []
+    original = type(tmp_path).iterdir
+
+    def recording_iterdir(self):
+        visited.append(self.name)
+        return original(self)
+
+    monkeypatch.setattr(type(tmp_path), "iterdir", recording_iterdir)
+    tools, _ = build_tools(tmp_path)
+
+    assert tools["list_files"]({}) == "README.md\nsrc/app.py"
+    assert ".venv" not in visited and "lib" not in visited
+
+
+def test_list_files_stops_after_one_hundred_files(tmp_path):
+    for index in range(150):
+        (tmp_path / f"file{index:03}.txt").write_text("")
+    tools, _ = build_tools(tmp_path)
+
+    listed = tools["list_files"]({}).splitlines()
+
+    assert len(listed) == 100
+    assert listed[0] == "file000.txt" and listed[-1] == "file099.txt"
