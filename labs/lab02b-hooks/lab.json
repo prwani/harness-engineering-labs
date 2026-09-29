@@ -1,0 +1,16 @@
+{
+  "number": 2,
+  "slug": "tool-hooks",
+  "title": "Lab 2B: Tool hooks and command policy",
+  "capabilities": [
+    "tool registry",
+    "CLI tools with pre-tool command policy",
+    "canonical transcript IDs",
+    "bounded tool loop",
+    "pre-model history validation",
+    "paired denial results"
+  ],
+  "live_validation": [
+    "Foundry tool-call transcript"
+  ]
+}

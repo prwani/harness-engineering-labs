@@ -1,4 +1,4 @@
-# Lab 2A — Tool loop and unrestricted CLI tools
+# Lab 2B — Tool hooks and command policy
 
 Extend the preceding snapshot with the capability described in `lab.json`. Keep
 the snapshot standalone: it must not import from or read another lab directory.

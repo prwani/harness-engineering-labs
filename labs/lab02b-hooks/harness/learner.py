@@ -14,6 +14,7 @@ def ask_with_tools(
     *,
     repo: Path,
     on_tool_call: Callable[[str, dict[str, Any]], None] | None = None,
+    on_hook_denial: Callable[[str, str], None] | None = None,
 ) -> Turn:
     from harness.tool_loop import run_tool_loop
     from harness.tools import build_tools
@@ -22,11 +23,12 @@ def ask_with_tools(
     return run_tool_loop(
         client,
         question,
-        "Answer from evidence. You have unrestricted Git CLI, Azure CLI, and shell "
-        "tools in the selected working directory. Use tools only when relevant, report "
-        "commands that change state, and do not claim success without evidence.",
+        "Answer from evidence. Git and Azure CLI calls are restricted to a few read "
+        "commands by pre-tool hooks; shell calls are denied. A denied call is not an "
+        "execution. Use the available repository helpers when relevant.",
         tools,
         tool_definitions=definitions,
         max_iterations=8,
         on_tool_call=on_tool_call,
+        on_hook_denial=on_hook_denial,
     )

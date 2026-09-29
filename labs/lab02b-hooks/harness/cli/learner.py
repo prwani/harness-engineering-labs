@@ -33,6 +33,9 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                         on_tool_call=lambda name, args: typer.echo(
                             f"Tool: {name}({args})", err=True
                         ),
+                        on_hook_denial=lambda name, reason: typer.echo(
+                            f"Hook: denied {name}: {reason}", err=True
+                        ),
                     )
 
                 if question is None:

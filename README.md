@@ -16,7 +16,8 @@ another.
 |---|-----|-------|
 | 0 | [Setup, dual API, and scorecard](labs/lab00-setup) | Entra configuration, dual model adapters, usage ledger, store simulator |
 | 1 | [Bare model call](labs/lab01-bare-call) | Stateless bare call, `StoreHealthReport` envelope, deterministic scorecard grading |
-| 2 | [Tool loop and agent spec](labs/lab02-tool-loop) | Tool registry, canonical transcript IDs, hook pipeline, agent specifications |
+| 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop) | Tool registry and unrestricted Git, Azure CLI, and shell tools |
+| 2B | [Tool hooks and command policy](labs/lab02b-hooks) | Pre-tool policy, pre-model history validation, paired denials |
 | 3 | [History and sessions](labs/lab03-sessions) | JSONL session persistence, resume recovery, history validation |
 | 4 | [Planning and todos](labs/lab04-planning) | Planner and executor modes, harness-owned todos, idempotent writes |
 | 5 | [File memory and access](labs/lab05-file-memory) | Session memory, optimistic concurrency, path scope enforcement |

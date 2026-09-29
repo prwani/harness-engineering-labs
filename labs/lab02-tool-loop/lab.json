@@ -1,12 +1,12 @@
 {
   "number": 2,
   "slug": "tool-loop",
-  "title": "Tool loop and agent spec",
+  "title": "Lab 2A: Tool loop and unrestricted CLI tools",
   "capabilities": [
     "tool registry",
+    "unrestricted CLI tools",
     "canonical transcript IDs",
-    "hook pipeline",
-    "agent specifications"
+    "bounded tool loop"
   ],
   "live_validation": [
     "Foundry tool-call transcript"

@@ -32,7 +32,7 @@ title: Lab Outline
 | **Agent** (definition, declarative) | Instructions + allowed tools + skills + model + permission policy | `.claude/agents/*.md` custom agents and sub-agents | Custom agents (`*.agent.md`) | `agents/*.md` specs, e.g. `store-ops`, `planner`, `catalog-fixer`, `service-mapper`, `orchestrator`, `evaluator` |
 | **Orchestration** | How several agents cooperate | Dynamic workflows, sub-agent fan-out | Sub-agents / fleets | The Lab 9 and 11–13 sub-agents, loops and graphs |
 
-**Agent spec contract** (introduced in Lab 2, used everywhere after that):
+**Agent spec contract** (for a later agent-focused lab, not Labs 2A–2B):
 
 ```markdown
 ---
@@ -67,10 +67,10 @@ LangChain middleware work too.
 
 | Hook | Runs | Can return | Used for (lab introduced) |
 |---|---|---|---|
-| `pre_model` | before every `complete()` | modified messages / tools, or `block` | `history.validate()` (2), todo reminder injection (4), compaction trigger (10) |
+| `pre_model` | before every `complete()` | modified messages / tools, or `block` | transcript validation (2B), todo reminder injection (4), compaction trigger (10) |
 | `post_model` | after every model turn | annotate, or `retry` | usage/cost recording (7), stall detection by new information served (2), truncation (`stop=length`) handling (11) |
 | `pre_tool_batch` | once per model turn, with all requested calls | `allow` · `modify(batch)` · `deny(call_ids, reason)` | concurrency cap and duplicate-spawn check on parallel `spawn_agent` calls (9) |
-| `pre_tool` | before each tool call, with name + args | `allow` · `deny(reason)` · `ask` (pause for human) · `modify(args)` | args schema validation (2), sandbox path check (2), duplicate-call suppression + per-turn output budget (2), file-scope check (5), **approval gate / policy** (6), change-set authorisation of writes (6), route code-exec tools to the configured executor/workspace (9, 12, §3.1) |
+| `pre_tool` | before each tool call, with name + args | `allow` · `deny(reason)` · `ask` (pause for human) · `modify(args)` | exact command policy (2B), file-scope check (5), **approval gate / policy** (6), change-set authorisation of writes (6), route code-exec tools to the configured executor/workspace (9, 12, §3.1) |
 | `post_tool` | after each tool call, with result | `pass` · `modify(result)` · `flag` | fabrication/write-log audit (6), result size limit + ignore list (7), secret/`Authorization` redaction (7), skill lint on written descriptions (8) |
 | `on_stop` | when the model says it's done | `accept` · `continue(feedback)` | completion checks: todos remaining (6), required-evidence coverage with a rejection budget (6), output schema valid (**validation loop, 11**), workspace suspend/cleanup (9) |
 | `on_error` | tool/model exception | `retry` · `fail` · convert to result | retry with backoff on 503 (7, generalised in 11) |
@@ -159,7 +159,7 @@ The learner builds an **ops agent** for the AKS Store Demo. It has two surfaces 
 
 ### 2.3 How the task grows across labs
 
-**The M1 task.** Labs 1–6 all run exactly the same task, so each capability's effect can be compared directly. The agenda's Lab 2A comparison is the Lab 6 checkpoint: M1 at the Lab 2 baseline against M1 with history, planning, memory and approval gates.
+**The M1 task.** Labs 1–6 all run exactly the same task, so each capability's effect can be compared directly. The older agenda's "Lab 2A" comparison is the Lab 6 checkpoint (distinct from course Lab 2A): M1 at the Lab 2 baseline against M1 with history, planning, memory and approval gates.
 
 > *"Produce a **Store Health Report**: (a) for each service, what it does, its language, port and dependencies; (b) every catalog issue (missing or weak descriptions, price anomalies, duplicates); (c) remediate the catalog issues."*
 
@@ -234,7 +234,7 @@ Keeping these separate avoids a floor effect in which "can't attempt" and "attem
 - the task text and task order
 - the budget caps
 
-Every lab's solution is tagged as a **harness version** `h<N>`, where *N* is the lab number: `h1` is the bare call, `h2` the tool loop, `h3` sessions, and so on up to `h13`, the capstone. Lab 0 has no tag, and Lab 1 has no predecessor to compare against.
+The proposed scorecard tags follow the lab number (`h1`, `h3`, etc.); the Lab 2 split uses `h2a` for the unrestricted baseline and `h2b` for hooks. Existing downstream snapshots have not yet inherited Lab 2B's hooks. Lab 0 has no tag, and Lab 1 has no predecessor to compare against.
 
 **3. Feature flags inside a version.** Some labs add more than one mechanism. Each such lab exposes flags so that every mechanism can be measured on its own, with the others held fixed:
 
@@ -268,7 +268,7 @@ A difference is flagged as **supported** only when the paired confidence interva
 
 | Version | Should go up | May go up (acceptable) | Should go down |
 |---|---|---|---|
-| h2 tool loop vs. h1 | success on code Q&A and catalog *detection* | tokens, calls | hallucinations |
+| h2a tool loop vs. h1 | success on code Q&A and catalog *detection* | tokens, calls | hallucinations |
 | h3 sessions | resumed runs complete | — | tokens on resumed runs vs. re-running from scratch |
 | h4 planning, todos, write tools | success on catalog repair; todo completion | tokens from planning; **`unapproved_writes > 0` (expected, fixed in h6)** | wasted or wrong writes vs. greedy |
 | h5 file memory | — | — | re-reads and tool calls on repeat runs |
@@ -550,7 +550,8 @@ flowchart LR
 |---|---|---|---|---|---|
 | 0 | Setup: Foundry (Entra), both APIs, simulator, scorecard | pre-work | 30–45 min | — | new |
 | 1 | Bare model call | Layer 1 | 20 min | `h1` | |
-| 2 | Tool loop, tool-call IDs, hook pipeline, agent spec | Layer 2 | 60 min | `h2` | **M1 baseline** saved |
+| 2A | Tool loop, tool-call IDs, unrestricted CLI tools | Layer 2 | 30 min | `h2a` | unrestricted baseline |
+| 2B | Pre-tool and pre-model hooks, command policy | Layer 2 | 30 min | `h2b` | paired denial comparison |
 | 3 | History & sessions | Layer 3 | 25 min | `h3` | |
 | 4 | Planning & todos | Layer 4 | 35 min | `h4` | |
 | 5 | File memory & access | Layer 5 | 25 min + 15 min recap | `h5` | 🟦 whiteboard recap, Layers 1–5 |
@@ -631,70 +632,48 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Reflect:** what would it need in order to *find out* instead of guessing?
 
-### Lab 2 — Tool loop and the agent spec
+### Lab 2A — Tool loop and unrestricted CLI tools
 
 **Concepts**
 - A schema describing the available functions.
 - The tool-calling contract: the model declares intent, the host executes, and the result is injected back.
 - Per-request iteration limits.
-- The harness as the reusable runtime, with the agent spec as configuration.
+- The harness as the reusable runtime; agent specs come later.
 
 **Task:** the M1 task, unchanged.
 
 **Build**
-1. **Tool registry**, using the provided JSON-Schema-from-type-hints helper and tool implementations.
-   - Code tools: `list_dir`, `read_file(path, start, end)` and `grep(pattern, glob)`, all sandboxed to `sandbox/repo/`.
-   - Store tools (read-only): `list_products` and `get_product`.
-2. **`run_agent()` loop** with `max_iterations`.
+1. **Tool registry:** local repository helpers and unrestricted `git_cli`, `azure_cli`, and `shell` tools. The learner's current directory is the default starting directory. These commands run with the learner's OS permissions; only use disposable resources.
+2. **`run_tool_loop()`** with `max_iterations`.
    - Tool errors go back to the model as observations.
-   - The **tool-call correlation rules** from §3 apply: canonical IDs, parallel calls, exactly one result per call, and `history.validate()`.
-3. **Hook pipeline** (§0.1) with two hooks:
-   - `pre_tool` validates arguments against the JSON Schema and checks that paths stay inside the sandbox.
-   - `pre_model` runs `history.validate()`.
-   - From here on, new cross-cutting behaviour is added as a hook, not by editing the loop.
-4. **Separate harness from agent:**
-   - Move the hard-coded system prompt, tool list and model choice out of `run_agent()` into `agents/store-ops.md`, an `AgentSpec` as described in §0.
-   - The harness gets a `load_agent(path)` function and `Harness.run(agent_spec, task)`.
-   - The harness enforces the spec's tool allow-list: it can only expose tools that the spec names, and the spec can only name tools that are registered.
-   - Swap `model:` between Claude and GPT in the spec without changing any code.
-5. **Progress detection: stop conditions beyond `max_iterations`.**
-   - A `pre_tool` hook suppresses **duplicate calls**. If the same tool is called with the same normalised arguments, it gets a short "already returned; see call `<id>`" result instead of running again. The pair still gets a result, so IDs stay correct.
-   - A **per-turn tool-output budget** (for example 8k tokens across all results in one turn). Results over the budget are truncated with a note telling the model to read a narrower range.
-   - **Stall detection:** progress means *new information served* (bytes of files or records not seen before), not the number of tool calls. After N turns with no new information (default 3), the harness ends the run with `stop=stalled`.
+   - Each requested call receives one result with its call ID, including errors.
+3. Save this deliberately unrestricted behavior for comparison with Lab 2B.
 
-**CLI:** add `harness run --agent … --task …` and `harness agents ls|validate`; render `tool_call` / `tool_result` events with their IDs.
+**CLI:** `harness ask` starts in the current directory; `--repo PATH` selects another. The Azure CLI tool is registered without an opt-in flag.
 
 **Verify**
 - Offline:
-  - The loop ends on `stop=end` and at the cap, and every tool call gets exactly one result.
-  - ID correlation, using a ScriptedModel run that spans several model calls:
-    - One turn requests **three parallel calls**, one of which raises an error.
-    - A later turn requests a tool that doesn't exist.
-    - Every result carries its call's exact ID.
-    - Claude results are grouped into one user message.
-    - GPT results use `call_id`, not the item `id`.
-    - `history.validate()` passes before every model call.
-    - Hitting the cap in the middle of a turn produces synthetic "cancelled" results.
-  - A spec that names an unregistered tool fails to load.
-  - A tool not listed in the spec is never exposed to the model.
-  - Progress detection, with a ScriptedModel run:
-    - A repeated identical call is suppressed and still paired.
-    - The per-turn output budget is enforced.
-    - A scripted run that re-reads the same files ends with `stop=stalled` before reaching the cap.
-- Live, tagged `h2`:
-  - Accuracy on parts (a) and (b) rises sharply against `h1`.
-  - Part (c) stays at 0, because there are no write tools yet.
-  - The scorecard shows input tokens growing each iteration.
-- This scorecard is saved as the **M1 baseline** for the Lab 6 checkpoint. `harness eval --harness h1` and `--harness h2` produce the first two points on the progression chart (§2.5).
+  - All three CLI tools are always registered; mocked arguments reach their executors.
+  - The loop pairs every result, accumulates usage, and stops at the iteration cap.
+- Live: compare a read command with a proposed write in a disposable repository.
 
-**Break it**
-- Remove the cap and ask "list every environment variable in every Helm chart and Bicep file". Watch cost and context climb, then restore the cap.
-- Spot the agent reading `package-lock.json` in full. This is a preview of Lab 7.
-- Break the IDs: drop one of two parallel results, then swap two IDs. With `history.validate()` turned off, both APIs return a 400; compare the two error messages. Turn the guard back on and see the clear harness error instead.
+**Reflect:** what does unrestricted tool execution unlock, and which safety controls are still missing?
 
-**Reflect:** what does the loop unlock, and what can it still not do? It has no memory across runs, no plan and no safety, and its context grows without bound.
+### Lab 2B — Tool hooks and command policy
 
-**Framework sidebar:** Agent Framework `Agent` with function tools, and the function-invocation iteration limit.
+**Concepts**
+- Hooks enforce a decision in the harness, independent of the model's instructions.
+- A denied call must still receive a result paired to its original call ID.
+- Pre-model transcript checks catch malformed history before the provider does.
+
+**Build**
+- A `pre_tool` hook allows only exact `git_cli` reads (`status`, `log -1 --oneline`) and `azure_cli` reads (`account show`, `resource list`); it denies shell and every other CLI request before execution.
+- `pre_model` checks completed call/result batches. Additional hooks can tighten but not remove the built-in command policy.
+- Emit `Hook: denied ...` at the CLI and return `DENIED: <reason>` as the tool result. No approval UI or OS sandbox is claimed here; approval is introduced in Lab 6.
+
+**Verify:** offline scripted model calls prove allowed reads execute, denied calls do not, both retain their IDs, and bad history fails before the next model call. Compare these observations with Lab 2A. The snapshots are standalone.
+
+**Next:** Lab 3 adds durable sessions. The existing later snapshots predate this split and have not yet inherited Lab 2B hooks. Agent specifications and richer policies remain separate future work.
 
 ### Lab 3 — History and sessions
 
@@ -1328,7 +1307,7 @@ AGENTS.md                    # map for coding agents → each lab's PROMPT.md an
 content-outline.txt  lab-outline.md
 infra/                       # Bicep: Foundry + App Insights role assignments (Labs 0–8); ACA session pool, sandbox group(s), egress policy (Lab 9+)
 labs/
-  lab00-setup/  lab01-bare-call/  lab02-tool-loop/  lab03-sessions/  lab04-planning/
+  lab00-setup/  lab01-bare-call/  lab02-tool-loop/  lab02b-hooks/  lab03-sessions/  lab04-planning/
   lab05-file-memory/  lab06-approval/  lab07-observability/  lab08-skills-tools/
   lab09-background-agents/  lab10-compaction/  lab11-loops/  lab12-graphs/
   lab13-capstone/  lab14-native-harness/

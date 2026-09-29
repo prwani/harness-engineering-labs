@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "harness-lab02-tool-loop"
+name = "harness-lab02b-hooks"
 version = "0.1.0"
-description = "Lab 2A: Tool loop and unrestricted CLI tools"
+description = "Lab 2B: Tool hooks and command policy"
 requires-python = ">=3.11"
 dependencies = [
   "azure-identity>=1.17,<2",

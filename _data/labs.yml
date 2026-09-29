@@ -8,8 +8,12 @@
   focus: "Stateless bare call, StoreHealthReport envelope, deterministic scorecard grading"
 - number: 2
   slug: lab02-tool-loop
-  title: "Tool loop and agent spec"
-  focus: "Tool registry, canonical transcript IDs, hook pipeline, agent specifications"
+  title: "2A — Tool loop and unrestricted CLI tools"
+  focus: "Tool loop, Git CLI, Azure CLI, shell, unrestricted baseline"
+- number: 2B
+  slug: lab02b-hooks
+  title: "2B — Tool hooks and command policy"
+  focus: "Pre-tool command policy, pre-model history checks, paired denials"
 - number: 3
   slug: lab03-sessions
   title: "History and sessions"
