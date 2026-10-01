@@ -8,12 +8,19 @@ To use a Foundry GPT Responses deployment, create an isolated
 temporary file outside the repository, replace the resource host and
 deployment name, and source it. Set `COPILOT_PROVIDER_MODEL_ID` to a
 well-known base model ID supported by your CLI and
-`COPILOT_PROVIDER_WIRE_MODEL` to your Foundry deployment name. Provide
-`COPILOT_PROVIDER_API_KEY` securely, or use
-`COPILOT_PROVIDER_BEARER_TOKEN` if your endpoint supports Entra auth
-and you have a fresh approved token. Set only one credential source.
+`COPILOT_PROVIDER_WIRE_MODEL` to your Foundry deployment name. Set
+`COPILOT_MODEL` to the configured model selection, and
+`COPILOT_PROVIDER_AZURE_API_VERSION` to the version required by your
+endpoint. Provide `COPILOT_PROVIDER_API_KEY` securely. An Entra bearer
+token is not part of the documented Azure BYOK recipe; only attempt
+it after independently validating your endpoint and CLI version.
+Set only one credential source.
 BYOK does not require GitHub sign-in. Do not commit keys/tokens or capture
 them in debug logs.
+
+Remote Foundry deployment compatibility is not established merely by
+setting these variables: test authentication, streaming and tool calling
+on your deployment and record any unsupported combinations.
 
 If you instead choose the hosted Copilot path, **do not source the BYOK
 variables**; run `copilot login` and select a model your account can use.

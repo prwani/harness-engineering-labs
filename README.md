@@ -4,16 +4,18 @@ This repository offers two paths through harness engineering:
 
 - **Build your own harness:** self-contained Python snapshots in [`labs/`](labs/),
   from a bare model call through tools, planning, memory and orchestration.
-- **Use an existing harness:** [Codex CLI capability labs](existing-harnesses/codex-cli/)
-  covering the same sequence with vendor-provided behavior and explicit
-  limits on what can be disabled or measured. The separate
+- **Use an existing harness:** standalone [Codex CLI](existing-harnesses/codex-cli/),
+  [Claude Code](existing-harnesses/claude-code/) and
+  [GitHub Copilot CLI](existing-harnesses/copilot-cli/) exercises covering
+  the same sequence with vendor-provided behavior and explicit limits on
+  what can be disabled or measured. The separate
   [Codex SDK path](existing-harnesses/codex-sdk/) is reserved for later.
 
 Each build-your-own snapshot can be copied or downloaded independently.
 Run its checks from inside its directory with `pytest checks/`. Snapshots
-do not import from one another. Codex CLI exercises are independent and
-need a learner-provisioned Foundry GPT Responses deployment; they do not
-yet provide a cross-path scored evaluation.
+do not import from one another. Existing-harness CLI exercises are also
+independent; live Foundry use needs learner-provisioned resources and
+credentials, and no cross-path scored evaluation is provided.
 
 📖 Browse the published site: **https://prwani.github.io/harness-engineering-labs/**
 
@@ -46,4 +48,5 @@ yet provide a cross-path scored evaluation.
   working in this repo.
 - `labs/` — one runnable snapshot per lab.
 - [`existing-harnesses/`](existing-harnesses/) — use an existing harness;
-  starting with separate Codex CLI exercises and a reserved Codex SDK path.
+  separate Codex CLI, Claude Code and Copilot CLI exercises, and a
+  reserved Codex SDK path.

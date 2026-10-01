@@ -5,7 +5,11 @@ Create a disposable workspace with `catalog.csv` and `service.txt`.
 Copy this lab's `.github/instructions/catalog.instructions.md` into
 `"$workdir/.github/instructions/"` and inspect the `applyTo` glob.
 The rule is contextual *instruction text*, not an executable hook or
-security policy. Start a **fresh** interactive `copilot -C "$workdir"`;
+security policy. Copilot also supports `preToolUse` hooks; inspect the
+[hook reference](https://docs.github.com/en/copilot/reference/hooks-reference)
+to contrast lifecycle hooks with instructions. Hook timeouts may fall
+through to normal permission handling, so do not claim fail-closed
+enforcement. Start a **fresh** interactive `copilot -C "$workdir"`;
 use `/instructions` to inspect loaded instruction sources. Ask for
 a cited catalog issue, then a service port; compare which file-specific
 rule appears to apply and what the model actually does. Stop if the

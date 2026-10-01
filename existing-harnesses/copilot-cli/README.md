@@ -29,11 +29,16 @@ run `copilot --version` and `copilot help providers`. Create a private,
 temporary `COPILOT_HOME` (`export COPILOT_HOME="$(mktemp -d)"`; `chmod 700
 "$COPILOT_HOME"`). Copy the lab's `provider.env.example` to a private file
 *outside this repository*, edit non-secret endpoint and model names, and
-source it. In Foundry BYOK mode set either `COPILOT_PROVIDER_API_KEY` from
-a secret manager or `COPILOT_PROVIDER_BEARER_TOKEN` from an approved
-Entra flow if supported by your endpoint; never put a credential in a
-file, command line, shell history or transcript. The CLI's `azure` provider
-sends the API key as `api-key` and a bearer token as `Authorization`.
+source it. For Azure OpenAI BYOK, set `COPILOT_PROVIDER_API_KEY` from
+a secret manager; an Entra bearer token is an experimental alternative
+only after validating your particular endpoint and CLI version. The
+[GitHub BYOK guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models#connecting-to-azure-openai)
+documents API-key authentication, an Azure API version and explicit model
+selection. The example here targets a Responses-compatible deployment;
+validate protocol, streaming, tool calls and authentication before
+calling a live run Foundry-backed. Never put a credential in a file,
+command line, shell history or transcript. A Foundry management skill
+and `az login` do **not** select Foundry as the inference provider.
 Alternatively omit BYOK variables and authenticate with GitHub using
 `copilot login`; that tests Copilot-hosted models, **not Foundry**.
 

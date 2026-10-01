@@ -4,7 +4,7 @@ Use **this lab's** `provider.env.example` and the [preflight](../).
 In a disposable workspace put `product.txt` containing only a synthetic
 name, material and use. Copy this lab's skill into
 `"$workdir/.github/skills/product-description/SKILL.md"`. Run
-`copilot skill list` or `/skills` to verify discovery in a *fresh*
+`copilot skill list` or `/skills list` to verify discovery in a *fresh*
 session, then ask for a description with and without this skill in
 separate disposable workspaces. Verify claims against `product.txt`.
 A skill is model-visible instructions, not a policy boundary; do not
