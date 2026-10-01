@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["services"],
+  "additionalProperties": false,
+  "properties": {
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "port", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string"},
+          "port": {"type": "integer"},
+          "evidence": {"type": "string"}
+        }
+      }
+    }
+  }
+}
