@@ -31,12 +31,12 @@ by this repository.
 **Common preflight for each lab:** Install Codex CLI; create a private
 `CODEX_HOME` with `mktemp -d` and `chmod 700`; copy that lab's
 `config.toml.example` to `$CODEX_HOME/config.toml` and set your deployment
-and endpoint (`/openai/v1`). By default `env_key` sends the value of
-`AZURE_OPENAI_API_KEY` in the Authorization header; use a fresh Entra token if
-supported (see [setup](lab00-setup/)). For a resource key, **replace**
-`env_key` in the copied config with
-`env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }` and load
-the key into that variable via a secret manager. Never write either value
+and endpoint (`/openai/v1`). Load your own resource API key into
+`AZURE_OPENAI_API_KEY` via a secret manager; `env_key` in the config
+names that variable. The
+[Microsoft Foundry Codex guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
+currently says Entra ID is **not supported for Codex**; do not pass an
+Entra token in place of a key. Never write the key
 to a lab file, terminal transcript, or commit. For noninteractive runs use
 `--sandbox read-only` unless a lab explicitly requires **disposable local**
 writes. A read-only sandbox restricts writes; it does *not* disable tools,

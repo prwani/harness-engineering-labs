@@ -7,10 +7,9 @@ matches *commands*, not every tool type; it does not replace the build-your-own
 Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
 lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in the
 endpoint ending in `/openai/v1` and deployment. Provide `AZURE_OPENAI_API_KEY`
-through a fresh Entra token for `https://cognitiveservices.azure.com/` if
-supported. For a resource key, replace `env_key` with
-`env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }` in the copied config
-and load the key via a secret manager. Never save either credential in the
+through your resource key from a secret manager. The
+[Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
+says Entra ID is not supported for Codex. Never save the key in the
 repository. Make a fresh disposable worktree, then load
 this lab's `commands.rules` into the isolated home (not your global config):
 

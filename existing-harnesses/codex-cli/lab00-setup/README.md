@@ -1,8 +1,14 @@
 # Lab 0 — Configure Codex CLI for Foundry
 
 Use a GPT deployment with the Responses API on Azure OpenAI in Microsoft
-Foundry. Install the Codex CLI using the [official instructions](https://github.com/openai/codex).
-Check `codex --version` and `codex exec --help` before continuing.
+Foundry. Install the CLI as described in the
+[Microsoft Foundry Codex guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm):
+
+```sh
+npm install -g @openai/codex
+codex --version
+codex exec --help
+```
 
 1. Create a private, temporary Codex home and copy this lab's example:
 
@@ -17,30 +23,14 @@ Check `codex --version` and `codex exec --help` before continuing.
    Responses route does not need the preview `api-version` query parameter.
    Do not put credentials in this file or in the repository.
 
-2. Choose **one** authentication route:
-
-   - **Entra ID, if this endpoint accepts bearer tokens through Codex's
-     `env_key` provider:** run `az login`, then set the variable for this
-     terminal session:
-
-     ```sh
-     export AZURE_OPENAI_API_KEY="$(az account get-access-token --resource https://cognitiveservices.azure.com/ --query accessToken -o tsv)"
-     ```
-
-     Codex does not refresh this token for this provider. Renew it when it
-     expires; if your deployment or Codex version does not accept it, use the
-     key route instead. This variable name is a Codex provider setting, not
-     a request to create an Azure API key.
-
-   - **API key:** change the provider configuration: **remove**
-     `env_key = "AZURE_OPENAI_API_KEY"` and put
-     `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }` in its
-     place. Then supply your own resource key to `AZURE_OPENAI_API_KEY`
-     using a secret manager or shell environment. Azure expects the
-     `api-key` header for keys; Codex's `env_key` sends a **Bearer**
-     header, suitable for Entra tokens, *not* Azure resource keys. Do not
-     paste credentials into `config.toml`, shell history, `.env`,
-     transcripts or commits.
+2. Supply your own Azure OpenAI resource API key through the
+   `AZURE_OPENAI_API_KEY` environment variable, preferably via a secret
+   manager. `env_key` in the example names the **variable**, not the secret
+   value. Do not paste credentials into `config.toml`, shell history,
+   `.env`, transcripts or commits. The linked Microsoft guide currently
+   says **Entra ID is not supported for Codex**; do not use `az login` or
+   an Entra token as a substitute for this key. This is an exception to
+   the existing-harness path's "Entra wherever supported" preference.
 
 3. Smoke-test the provider from an empty directory:
 

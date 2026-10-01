@@ -7,11 +7,9 @@ per-tool OTel span tree, approval decisions, or provider cache hit counters.
 Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
 lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
 your endpoint (ending in `/openai/v1`) and deployment. Set
-`AZURE_OPENAI_API_KEY` from a fresh Entra token for
-`https://cognitiveservices.azure.com/` if supported. For a resource key,
-replace `env_key` with `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`
-in the copied config and load the key via a secret manager; never save it
-in files.
+`AZURE_OPENAI_API_KEY` from your resource key via a secret manager.
+The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
+says Entra ID is not supported for Codex; never save the key in files.
 Prepare a fresh disposable workspace:
 
 ```sh

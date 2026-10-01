@@ -1,7 +1,8 @@
 model = "YOUR_FOUNDRY_GPT_DEPLOYMENT"
-model_provider = "foundry"
+model_provider = "azure"
 
-[model_providers.foundry]
-name = "Foundry Azure OpenAI"
+[model_providers.azure]
+name = "Azure OpenAI"
 base_url = "https://YOUR_RESOURCE.openai.azure.com/openai/v1"
 env_key = "AZURE_OPENAI_API_KEY"
+wire_api = "responses"

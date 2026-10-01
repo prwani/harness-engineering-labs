@@ -14,18 +14,12 @@ as if the two harnesses had identical capabilities.
    ```
 
    Edit the copy to use your GPT Responses deployment and Azure OpenAI
-   endpoint ending in `/openai/v1`. For Entra ID, where accepted, run `az login`
-   and acquire a token for this terminal session (renew it on expiry):
-
-   ```sh
-   export AZURE_OPENAI_API_KEY="$(az account get-access-token --resource https://cognitiveservices.azure.com/ --query accessToken -o tsv)"
-   ```
-
-   For resource-key auth, **replace** `env_key` in the config copy with
-   `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`, then
-   supply your key through the same environment variable via a secret
-   manager. `env_key` uses the Authorization header and cannot be used with an
-   Azure API key. Never store either credential in files or logs. Create
+   endpoint ending in `/openai/v1`. Load your own resource API key into
+   `AZURE_OPENAI_API_KEY` via a secret manager; `env_key` names that
+   environment variable, not a literal key. The
+   [Microsoft Foundry guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
+   says Entra ID is not currently supported for Codex. Never store the
+   key in files or logs. Create
    a fresh, empty work directory. Do not mount a repository, simulator,
    MCP servers or skills.
 

@@ -15,6 +15,8 @@ workflow exercises explicitly identify any human-orchestrated step rather
 than claiming Codex has a native graph runtime.
 
 For Foundry, prefer Entra ID where the chosen harness and endpoint support it.
-When they do not, a learner-provided API key is acceptable **in this path**.
+The [Codex CLI guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
+currently says Entra ID is not supported for Codex; these exercises use
+a learner-provided resource API key **in this path**.
 Never commit keys or access tokens; the build-your-own `labs/` path retains its
 Entra-only contract.
