@@ -29,7 +29,8 @@ run `copilot --version` and `copilot help providers`. Create a private,
 temporary `COPILOT_HOME` (`export COPILOT_HOME="$(mktemp -d)"`; `chmod 700
 "$COPILOT_HOME"`). Copy the lab's `provider.env.example` to a private file
 *outside this repository*, edit non-secret endpoint and model names, and
-source it. For Azure OpenAI BYOK, set `COPILOT_PROVIDER_API_KEY` from
+source it. Set `workdir="$(mktemp -d)"` for exercises that use `$workdir`;
+keep all exercise files there. For Azure OpenAI BYOK, set `COPILOT_PROVIDER_API_KEY` from
 a secret manager; an Entra bearer token is an experimental alternative
 only after validating your particular endpoint and CLI version. The
 [GitHub BYOK guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models#connecting-to-azure-openai)
