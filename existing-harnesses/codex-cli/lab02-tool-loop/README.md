@@ -4,8 +4,13 @@
 replace its call/result pairing with the build-your-own loop. Compare an
 empty-workspace run to a run with a *synthetic* service manifest.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Make a
-disposable working directory containing only:
+Install Codex CLI. Set `CODEX_HOME` to a private temporary directory,
+copy this lab's `config.toml.example` to `$CODEX_HOME/config.toml`, and
+replace the endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY`
+to a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or a learner-provided resource key via a secret manager.
+Never save credentials in files. Make a disposable working directory
+containing only:
 
 ```sh
 workdir="$(mktemp -d)"

@@ -4,9 +4,13 @@
 cap bounds the example; it is not a claim of deterministic joins, tenant
 isolation or ACA Sandboxes.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Check `codex
-features list` for `multi_agent` before running. Create a disposable,
-read-only workspace containing two independent service files:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+the endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key via a secret manager; never save it
+in files. Check `codex features list` for `multi_agent` before running.
+Create a disposable, read-only workspace containing two independent files:
 
 ```sh
 workdir="$(mktemp -d)"

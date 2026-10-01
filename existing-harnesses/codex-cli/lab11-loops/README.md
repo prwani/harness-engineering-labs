@@ -4,8 +4,12 @@
 the final response shape when the chosen model/provider supports it; it does
 not implement a validated, bounded retry/poll/refinement scheduler for you.
 
-Use the [preflight](../) with this lab's `config.toml.example`. In a private,
-disposable directory, make a synthetic service manifest:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key from a secret manager; never save it
+in files. From this lab directory, make a private disposable workspace:
 
 ```sh
 workdir="$(mktemp -d)"

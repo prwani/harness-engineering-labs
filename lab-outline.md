@@ -502,6 +502,16 @@ no new services.
 
 ## 4. Learner tracks
 
+The A/B/C forms below describe **ways of using the build-your-own labs**,
+not names for the two harness paths. A separate
+[existing-harnesses/Codex CLI path](existing-harnesses/codex-cli/) now
+follows the same capability order with independent, vendor-harness
+exercises. It prefers Foundry Entra authentication where supported and
+otherwise permits learner-provided keys; this does **not** change the
+build-your-own labs' Entra-only rule. The Codex CLI baseline is not a
+bare model call, and its advanced graph/loop exercises do not claim
+native programmable orchestration or comparable scorecards.
+
 Each lab ships in three forms:
 
 | Track | For | Contents of each lab |

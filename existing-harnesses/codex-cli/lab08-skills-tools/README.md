@@ -5,8 +5,13 @@ instructions are not an authorization policy; adding a server exposes tools
 with the permissions of its process. Tool search and token-tax comparisons
 require actual measured runs, not just a configured server list.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Set up a
-disposable working directory containing a local, reviewable skill:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+the endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key via a secret manager; never save it
+in files. Set up a disposable working directory containing a local,
+reviewable skill:
 
 ```sh
 workdir="$(mktemp -d)"

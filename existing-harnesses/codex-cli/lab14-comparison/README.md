@@ -5,8 +5,12 @@ and optional skills. The build-your-own control is a *true* bare call;
 Codex's constrained baseline cannot be made equivalent merely by removing
 project files or setting `--sandbox read-only`.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Run a fresh
-Codex session in an empty disposable directory:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key from a secret manager; never save it
+in files. Run a fresh Codex session in an empty disposable directory:
 
 ```sh
 workdir="$(mktemp -d)"

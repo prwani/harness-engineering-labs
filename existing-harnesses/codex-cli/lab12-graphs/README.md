@@ -5,8 +5,12 @@ verified, user-facing declarative workflow graph CLI. Here the human
 routes two questions to separate Codex runs; conditional edges, loop-back
 and join semantics remain **outside** Codex.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Create a
-disposable directory containing a service manifest and synthetic orders:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key from a secret manager; never save it
+in files. Create a disposable directory containing synthetic data:
 
 ```sh
 workdir="$(mktemp -d)"

@@ -37,7 +37,10 @@ from your own resource key via a secret manager. Never write either value to
 a lab file, terminal transcript, or commit. For noninteractive runs use
 `--sandbox read-only` unless a lab explicitly requires **disposable local**
 writes. A read-only sandbox restricts writes; it does *not* disable tools,
-network access, the model's built-in agent loop, or all connectors.
+network access, the model's built-in agent loop, or all connectors. It is
+not a confidentiality boundary for other readable host files or environment
+variables. Use a separate disposable account/container for sensitive
+environments, and do not give Codex access to real customer data.
 
 Use only synthetic data and disposable directories. Do not grant access to
 real customer data, live Azure resources, or privileged credentials. After

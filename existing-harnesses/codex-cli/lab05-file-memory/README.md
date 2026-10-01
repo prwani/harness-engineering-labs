@@ -5,8 +5,12 @@
 concurrency memory store. File access is controlled by the sandbox and OS,
 not by merely saying "do not read" in a prompt.
 
-Use the [preflight](../) with this lab's `config.toml.example`, then create a
-disposable workspace:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY` from
+a fresh Entra token for `https://cognitiveservices.azure.com/` if supported,
+or your own resource key from a secret manager; never save it in files.
+Create a disposable workspace:
 
 ```sh
 workdir="$(mktemp -d)"

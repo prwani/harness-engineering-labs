@@ -1,16 +1,23 @@
 # Harness Engineering Labs
 
-This repository contains self-contained Python lab snapshots for building an
-agent harness from a bare model call through tool loops, planning, memory,
-observability, background agents, loop engineering, and graph orchestration.
+This repository offers two paths through harness engineering:
 
-Each snapshot can be copied or downloaded independently. Run its checks from
-inside its directory with `pytest checks/`. Snapshots do not import from one
-another.
+- **Build your own harness:** self-contained Python snapshots in [`labs/`](labs/),
+  from a bare model call through tools, planning, memory and orchestration.
+- **Use an existing harness:** [Codex CLI capability labs](existing-harnesses/codex-cli/)
+  covering the same sequence with vendor-provided behavior and explicit
+  limits on what can be disabled or measured. The separate
+  [Codex SDK path](existing-harnesses/codex-sdk/) is reserved for later.
+
+Each build-your-own snapshot can be copied or downloaded independently.
+Run its checks from inside its directory with `pytest checks/`. Snapshots
+do not import from one another. Codex CLI exercises are independent and
+need a learner-provisioned Foundry GPT Responses deployment; they do not
+yet provide a cross-path scored evaluation.
 
 📖 Browse the published site: **https://prwani.github.io/harness-engineering-labs/**
 
-## Labs
+## Build-your-own labs
 
 | # | Lab | Focus |
 |---|-----|-------|

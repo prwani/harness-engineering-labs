@@ -4,8 +4,12 @@
 prove that its internal todo state is identical to the build-your-own
 planner/executor and `write_todos` contract.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Work only on a
-synthetic catalog in a new disposable directory:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+the endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY` to
+a fresh Entra token for `https://cognitiveservices.azure.com/` if supported,
+or your own resource key from a secret manager; never save it in files.
+Work only on a synthetic catalog in a new disposable directory:
 
 ```sh
 workdir="$(mktemp -d)"

@@ -4,9 +4,13 @@
 matches *commands*, not every tool type; it does not replace the build-your-own
 `pre_tool`/`pre_model` hooks or validate model transcript invariants.
 
-Use the [preflight](../) with this lab's `config.toml.example`. Make a fresh
-disposable worktree, then load this lab's `commands.rules` into the isolated
-Codex home (not your global config):
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in the
+endpoint, deployment and supported API version. Provide `AZURE_OPENAI_API_KEY`
+through a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key via a secret manager; never save either
+credential in the repository. Make a fresh disposable worktree, then load
+this lab's `commands.rules` into the isolated home (not your global config):
 
 ```sh
 workdir="$(mktemp -d)"

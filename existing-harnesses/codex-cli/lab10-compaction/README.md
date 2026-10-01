@@ -4,9 +4,12 @@
 interactive mode. It does not expose the build-your-own atomic
 transcript-rewrite contract or guarantee that every fact survives.
 
-Use the [preflight](../) with this lab's `config.toml.example`, then start
-interactive `codex -C "$workdir" --sandbox read-only` in a fresh disposable
-directory containing:
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY`
+from a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key from a secret manager; never save it
+in files. Create a fresh disposable directory containing:
 
 ```sh
 workdir="$(mktemp -d)"
@@ -14,6 +17,7 @@ printf 'demo-order uses queue orders-demo\n' > "$workdir/order.txt"
 printf 'demo-makeline consumes queue orders-demo\n' > "$workdir/makeline.txt"
 ```
 
+Start interactive `codex -C "$workdir" --sandbox read-only`.
 Ask for both queue names with citations. Ask a few follow-up questions,
 record the salient facts and context/usage indicators if shown by your
 version, then enter `/compact` in the **interactive Codex prompt**, not in

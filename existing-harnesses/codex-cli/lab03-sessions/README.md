@@ -3,8 +3,12 @@
 **Capability:** Codex persists and resumes sessions. Its internal transcript
 and crash replay rules are not the build-your-own JSONL contract.
 
-Use the [preflight](../) with this lab's `config.toml.example`, then run in a
-fresh, empty disposable directory (one Codex session at a time):
+Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
+lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
+your endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
+from a fresh Entra token for `https://cognitiveservices.azure.com/` if
+supported, or your own resource key via a secret manager; do not save it
+in files. Run in a fresh, empty disposable directory (one session at a time):
 
 ```sh
 workdir="$(mktemp -d)"
