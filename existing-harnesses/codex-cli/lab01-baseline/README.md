@@ -5,8 +5,25 @@ Codex CLI. It cannot guarantee a bare call: Codex owns the agent loop and
 read-only sandboxing does not disable all tools. Do not compare its results
 as if the two harnesses had identical capabilities.
 
-1. Follow [Lab 0's configuration and authentication steps](../lab00-setup/)
-   using **this lab's** `config.toml.example`. Create a fresh, empty work
+1. Install Codex CLI and check `codex exec --help`. Prepare an isolated home:
+
+   ```sh
+   export CODEX_HOME="$(mktemp -d)"
+   chmod 700 "$CODEX_HOME"
+   cp config.toml.example "$CODEX_HOME/config.toml"
+   ```
+
+   Edit the copy to use your GPT Responses deployment, Azure OpenAI endpoint
+   and supported API version. For Entra ID, where accepted, run `az login`
+   and acquire a token for this terminal session (renew it on expiry):
+
+   ```sh
+   export AZURE_OPENAI_API_KEY="$(az account get-access-token --resource https://cognitiveservices.azure.com/ --query accessToken -o tsv)"
+   ```
+
+   Otherwise, supply your own resource API key through
+   the same environment variable, preferably via a secret manager. Never
+   store either credential in files or logs. Create a fresh, empty work
    directory. Do not mount a repository, simulator, MCP servers or skills.
 
 2. Run one fresh, noninteractive task with no prior session:
@@ -27,7 +44,8 @@ as if the two harnesses had identical capabilities.
    whether tools were called, the report, and any usage Codex actually
    exposes. Mark unavailable metrics as unavailable, not zero. This pilot
    does **not** yet include a shared grader or claim a comparable scorecard.
-   End the run and remove the temporary work directory and `CODEX_HOME`.
+   End the run, remove the temporary work directory and `CODEX_HOME`, and
+   unset `AZURE_OPENAI_API_KEY`.
 
 Next: introduce access to the same source and store simulator as the
 build-your-own labs, with explicit permissions and measurable grading.
