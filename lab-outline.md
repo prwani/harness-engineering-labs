@@ -502,6 +502,22 @@ no new services.
 
 ## 4. Learner tracks
 
+The A/B/C forms below describe **ways of using the build-your-own labs**,
+not names for the two harness paths. A separate
+[existing-harnesses path](existing-harnesses/) now has independent
+[Codex CLI](existing-harnesses/codex-cli/),
+[Claude Code](existing-harnesses/claude-code/) and
+[Copilot CLI](existing-harnesses/copilot-cli/) exercises in the same
+capability order. It prefers Foundry Entra authentication where supported; the
+current Microsoft Codex guide says it is not supported for Codex, so
+the Codex CLI labs require a learner-provided key. Claude Code's Foundry
+guide supports Entra or key authentication; Copilot CLI's documented
+Azure BYOK recipe uses a key, with remote Foundry model compatibility
+requiring validation. This does **not** change the build-your-own labs'
+Entra-only rule. A vendor CLI baseline is not a
+bare model call, and its advanced graph/loop exercises do not claim
+native programmable orchestration or comparable scorecards.
+
 Each lab ships in three forms:
 
 | Track | For | Contents of each lab |

@@ -1,16 +1,25 @@
 # Harness Engineering Labs
 
-This repository contains self-contained Python lab snapshots for building an
-agent harness from a bare model call through tool loops, planning, memory,
-observability, background agents, loop engineering, and graph orchestration.
+This repository offers two paths through harness engineering:
 
-Each snapshot can be copied or downloaded independently. Run its checks from
-inside its directory with `pytest checks/`. Snapshots do not import from one
-another.
+- **Build your own harness:** self-contained Python snapshots in [`labs/`](labs/),
+  from a bare model call through tools, planning, memory and orchestration.
+- **Use an existing harness:** standalone [Codex CLI](existing-harnesses/codex-cli/),
+  [Claude Code](existing-harnesses/claude-code/) and
+  [GitHub Copilot CLI](existing-harnesses/copilot-cli/) exercises covering
+  the same sequence with vendor-provided behavior and explicit limits on
+  what can be disabled or measured. The separate
+  [Codex SDK path](existing-harnesses/codex-sdk/) is reserved for later.
+
+Each build-your-own snapshot can be copied or downloaded independently.
+Run its checks from inside its directory with `pytest checks/`. Snapshots
+do not import from one another. Existing-harness CLI exercises are also
+independent; live Foundry use needs learner-provisioned resources and
+credentials, and no cross-path scored evaluation is provided.
 
 📖 Browse the published site: **https://prwani.github.io/harness-engineering-labs/**
 
-## Labs
+## Build-your-own labs
 
 | # | Lab | Focus |
 |---|-----|-------|
@@ -38,3 +47,6 @@ another.
 - [`AGENTS.md`](AGENTS.md) — repository map and conventions for agents
   working in this repo.
 - `labs/` — one runnable snapshot per lab.
+- [`existing-harnesses/`](existing-harnesses/) — use an existing harness;
+  separate Codex CLI, Claude Code and Copilot CLI exercises, and a
+  reserved Codex SDK path.

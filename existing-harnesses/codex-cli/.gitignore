@@ -1,0 +1,6 @@
+# Never version local Codex state, credentials, or generated run output.
+config.toml
+.codex/
+.env
+runs/
+*.jsonl
