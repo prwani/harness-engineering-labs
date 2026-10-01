@@ -6,10 +6,12 @@ matches *commands*, not every tool type; it does not replace the build-your-own
 
 Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
 lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in the
-endpoint, deployment and supported API version. Provide `AZURE_OPENAI_API_KEY`
+endpoint ending in `/openai/v1` and deployment. Provide `AZURE_OPENAI_API_KEY`
 through a fresh Entra token for `https://cognitiveservices.azure.com/` if
-supported, or your own resource key via a secret manager; never save either
-credential in the repository. Make a fresh disposable worktree, then load
+supported. For a resource key, replace `env_key` with
+`env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }` in the copied config
+and load the key via a secret manager. Never save either credential in the
+repository. Make a fresh disposable worktree, then load
 this lab's `commands.rules` into the isolated home (not your global config):
 
 ```sh
@@ -19,14 +21,18 @@ mkdir -p "$CODEX_HOME/rules"
 cp commands.rules "$CODEX_HOME/rules/commands.rules"
 ```
 
-If your version has `codex execpolicy check`, inspect how `rm test.txt`,
-`git status` and `git commit` are classified with `--rules commands.rules
--- <command>`. Codex CLI 0.159.3 does **not** expose this check command:
-use an interactive, read-only `codex -C "$workdir" --sandbox read-only
---ask-for-approval on-request` and ask it to explain which commands it
-would choose for `git status` and removing a synthetic file. Do **not**
-attempt an actual deletion to test policy. Use `--json` in a separate
-noninteractive read task to inspect which tools are invoked.
+Check the rules *without executing anything* (`execpolicy` is available
+in 0.159.3 even though top-level help does not list it):
+
+```sh
+codex execpolicy check --rules commands.rules -- rm test.txt
+codex execpolicy check --rules commands.rules -- git status
+codex execpolicy check --rules commands.rules -- git commit
+```
+
+Expect forbidden, allow and no matching rule, respectively. Then in an
+interactive, read-only session, ask Codex to read `git status`; compare
+the tool choice to the policy result. Never delete files just to test a rule.
 
 Inspect [Codex's execution policy documentation](https://developers.openai.com/codex/exec-policy)
 and your installed version before using rules in production. The supplied

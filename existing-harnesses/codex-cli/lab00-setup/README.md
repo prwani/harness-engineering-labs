@@ -13,9 +13,9 @@ Check `codex --version` and `codex exec --help` before continuing.
    ```
 
    Edit `config.toml` in `CODEX_HOME`: set the deployment name and your
-   resource's Azure OpenAI endpoint. Confirm the supported API version for
-   your deployment; change the example version if necessary. Do not put
-   credentials in this file or in the repository.
+   resource's Azure OpenAI endpoint ending in `/openai/v1`. The v1
+   Responses route does not need the preview `api-version` query parameter.
+   Do not put credentials in this file or in the repository.
 
 2. Choose **one** authentication route:
 
@@ -32,9 +32,15 @@ Check `codex --version` and `codex exec --help` before continuing.
      key route instead. This variable name is a Codex provider setting, not
      a request to create an Azure API key.
 
-   - **API key:** obtain a key for your own resource and supply it to
-     `AZURE_OPENAI_API_KEY` in your shell or a secret manager. Do not paste
-     it into `config.toml`, shell history, `.env`, transcripts, or commits.
+   - **API key:** change the provider configuration: **remove**
+     `env_key = "AZURE_OPENAI_API_KEY"` and put
+     `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }` in its
+     place. Then supply your own resource key to `AZURE_OPENAI_API_KEY`
+     using a secret manager or shell environment. Azure expects the
+     `api-key` header for keys; Codex's `env_key` sends a **Bearer**
+     header, suitable for Entra tokens, *not* Azure resource keys. Do not
+     paste credentials into `config.toml`, shell history, `.env`,
+     transcripts or commits.
 
 3. Smoke-test the provider from an empty directory:
 
@@ -46,7 +52,7 @@ Check `codex --version` and `codex exec --help` before continuing.
 
    The command makes a live model request and may incur charges. Read-only
    restricts filesystem writes, **not** the agent loop or tool availability.
-   If it fails, check the endpoint, deployment, API version, credential and
+   If it fails, check the endpoint, deployment, credential and
    model support for Responses. The example is not a tested configuration
    for every Foundry resource.
 

@@ -6,9 +6,11 @@ transcript-rewrite contract or guarantee that every fact survives.
 
 Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
 lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
-your endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY`
-from a fresh Entra token for `https://cognitiveservices.azure.com/` if
-supported, or your own resource key from a secret manager; never save it
+your endpoint (ending in `/openai/v1`) and deployment. Set
+`AZURE_OPENAI_API_KEY` from a fresh Entra token for
+`https://cognitiveservices.azure.com/` if supported. For a resource key,
+replace `env_key` with `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`
+in the copied config and load the key via a secret manager; never save it
 in files. Create a fresh disposable directory containing:
 
 ```sh

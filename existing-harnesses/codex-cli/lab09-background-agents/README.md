@@ -6,9 +6,11 @@ isolation or ACA Sandboxes.
 
 Install Codex CLI; create a private temporary `CODEX_HOME`, copy this
 lab's `config.toml.example` to `$CODEX_HOME/config.toml` and fill in
-the endpoint, deployment and API version. Provide `AZURE_OPENAI_API_KEY`
-through a fresh Entra token for `https://cognitiveservices.azure.com/` if
-supported, or your own resource key via a secret manager; never save it
+the endpoint (ending in `/openai/v1`) and deployment. Provide
+`AZURE_OPENAI_API_KEY` through a fresh Entra token for
+`https://cognitiveservices.azure.com/` if supported. For a resource key,
+replace `env_key` with `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`
+in the copied config and load the key via a secret manager; never save it
 in files. Check `codex features list` for `multi_agent` before running.
 Create a disposable, read-only workspace containing two independent files:
 

@@ -3,9 +3,8 @@ model_provider = "foundry"
 
 [model_providers.foundry]
 name = "Foundry Azure OpenAI"
-base_url = "https://YOUR_RESOURCE.openai.azure.com/openai"
+base_url = "https://YOUR_RESOURCE.openai.azure.com/openai/v1"
 env_key = "AZURE_OPENAI_API_KEY"
-query_params = { api-version = "2025-04-01-preview" }
 
 [agents]
 max_concurrent_threads_per_session = 2

@@ -13,18 +13,21 @@ as if the two harnesses had identical capabilities.
    cp config.toml.example "$CODEX_HOME/config.toml"
    ```
 
-   Edit the copy to use your GPT Responses deployment, Azure OpenAI endpoint
-   and supported API version. For Entra ID, where accepted, run `az login`
+   Edit the copy to use your GPT Responses deployment and Azure OpenAI
+   endpoint ending in `/openai/v1`. For Entra ID, where accepted, run `az login`
    and acquire a token for this terminal session (renew it on expiry):
 
    ```sh
    export AZURE_OPENAI_API_KEY="$(az account get-access-token --resource https://cognitiveservices.azure.com/ --query accessToken -o tsv)"
    ```
 
-   Otherwise, supply your own resource API key through
-   the same environment variable, preferably via a secret manager. Never
-   store either credential in files or logs. Create a fresh, empty work
-   directory. Do not mount a repository, simulator, MCP servers or skills.
+   For resource-key auth, **replace** `env_key` in the config copy with
+   `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`, then
+   supply your key through the same environment variable via a secret
+   manager. `env_key` uses the Authorization header and cannot be used with an
+   Azure API key. Never store either credential in files or logs. Create
+   a fresh, empty work directory. Do not mount a repository, simulator,
+   MCP servers or skills.
 
 2. Run one fresh, noninteractive task with no prior session:
 

@@ -6,10 +6,12 @@ empty-workspace run to a run with a *synthetic* service manifest.
 
 Install Codex CLI. Set `CODEX_HOME` to a private temporary directory,
 copy this lab's `config.toml.example` to `$CODEX_HOME/config.toml`, and
-replace the endpoint, deployment and API version. Set `AZURE_OPENAI_API_KEY`
-to a fresh Entra token for `https://cognitiveservices.azure.com/` if
-supported, or a learner-provided resource key via a secret manager.
-Never save credentials in files. Make a disposable working directory
+replace the endpoint (ending in `/openai/v1`) and deployment. Set
+`AZURE_OPENAI_API_KEY` to a fresh Entra token for
+`https://cognitiveservices.azure.com/` if supported. For a resource key,
+replace `env_key` with `env_http_headers = { "api-key" = "AZURE_OPENAI_API_KEY" }`
+in the copied config and load the key via a secret manager. Never save
+credentials in files. Make a disposable working directory
 containing only:
 
 ```sh
