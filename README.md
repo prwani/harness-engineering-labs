@@ -38,3 +38,5 @@ another.
 - [`AGENTS.md`](AGENTS.md) — repository map and conventions for agents
   working in this repo.
 - `labs/` — one runnable snapshot per lab.
+- [`existing-harnesses/`](existing-harnesses/) — use an existing harness;
+  starting with separate Codex CLI exercises and a reserved Codex SDK path.
