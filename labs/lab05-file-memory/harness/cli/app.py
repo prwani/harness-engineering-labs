@@ -23,6 +23,14 @@ app.add_typer(sim_app, name="sim")
 app.add_typer(memory_app, name="memory")
 
 
+@memory_app.command("files")
+def memory_files(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Show which HARNESS.md memory files `harness ask` loads."""
+    from harness.project_memory import describe_memory
+
+    typer.echo(describe_memory(Path(repo).resolve()))
+
+
 @memory_app.command("ls")
 def memory_ls(root: str = "memory") -> None:
     """List files in session memory."""

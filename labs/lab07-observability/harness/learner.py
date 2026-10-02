@@ -41,6 +41,7 @@ def ask_with_tools(
 ) -> Turn:
     from harness.hooks import HookPipeline, load_project_hooks
     from harness.plan_mode import PLAN_TOOLS, mode_prompt, plan_mode_policy, todo_tool
+    from harness.project_memory import load_memory, memory_prompt
     from harness.tool_loop import run_tool_loop
     from harness.tools import build_tools
 
@@ -55,7 +56,9 @@ def ask_with_tools(
         # Plan mode: write tools are not offered, and the policy denies them anyway.
         definitions = [item for item in definitions if item["name"] in PLAN_TOOLS]
         hooks = HookPipeline((plan_mode_policy, *hooks.pre_tool), hooks.pre_model, hooks.post_tool)
-    system = "\n\n".join(part for part in (SYSTEM_PROMPT, mode_prompt(mode, todos)) if part)
+    # Memory files are read for every question, so edits apply on the next one.
+    sections = (SYSTEM_PROMPT, memory_prompt(load_memory(repo)), mode_prompt(mode, todos))
+    system = "\n\n".join(part for part in sections if part)
     return run_tool_loop(
         client,
         question,

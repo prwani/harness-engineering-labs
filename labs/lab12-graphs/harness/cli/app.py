@@ -31,6 +31,14 @@ def approvals(tool: str, reason: str = typer.Option("", "--reason")) -> None:
     typer.echo(json.dumps({"tool": tool, "decision": decision.decision.value, "reason": decision.reason}))
 
 
+@memory_app.command("files")
+def memory_files(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Show which HARNESS.md memory files `harness ask` loads."""
+    from harness.project_memory import describe_memory
+
+    typer.echo(describe_memory(Path(repo).resolve()))
+
+
 @memory_app.command("ls")
 def memory_ls(root: str = "memory") -> None:
     """List files in session memory."""

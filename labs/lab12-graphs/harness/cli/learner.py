@@ -37,6 +37,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
 
         from harness.chat import APPROVED, Chat
         from harness.plan_mode import render_todos
+        from harness.project_memory import INIT_PROMPT, describe_memory
         from harness.session import SessionStore
         from harness.tool_loop import LoopStats
 
@@ -102,9 +103,16 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     typer.echo("Execute mode: the plan is approved and write tools are on.")
                     respond(f"{APPROVED} {extra}".strip())
 
+                def show_memory(_: str) -> None:
+                    typer.echo(describe_memory(root))
+
+                def init_memory(extra: str) -> None:
+                    respond(f"{INIT_PROMPT} {extra}".strip())
+
                 commands = {
                     "/session": show_session, "/history": show_history, "/todos": show_todos,
                     "/plan": enter_plan_mode, "/execute": execute,
+                    "/memory": show_memory, "/init": init_memory,
                 }
                 if question is None:
                     run_interactive(
