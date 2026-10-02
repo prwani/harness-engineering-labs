@@ -64,6 +64,16 @@ class Activity:
             self._clear()
             self._write_line(message)
 
+    def ask(self, prompt: str) -> str:
+        """Pause the spinner and read one line from the user; EOF reads as ''."""
+        with self._lock:
+            self._clear()
+            try:
+                return input(prompt)
+            except EOFError:
+                typer.echo("")
+                return ""
+
     def close(self) -> None:
         if self._finished is None:
             self._finished = perf_counter()

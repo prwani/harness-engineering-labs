@@ -3,11 +3,14 @@
   "slug": "approval",
   "title": "Tool approval and safety gates",
   "capabilities": [
+    "allow/ask/deny permission rules",
+    "interactive approval",
+    "user, project and local settings",
     "tool policy gate",
     "standing approvals",
     "write audit log"
   ],
   "live_validation": [
-    "human approval flow"
+    "human approval flow with prompt injection"
   ]
 }

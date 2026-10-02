@@ -81,6 +81,17 @@ def sessions(
                    f"{info.size / 1024:>7.1f} KB  {info.title}{fork}")
 
 
+@app.command("permissions")
+def permissions(
+    repo: str = typer.Option(".", "--repo", help="Project directory."),
+    accept_edits: bool = typer.Option(False, "--accept-edits", help="Show the --accept-edits defaults."),
+) -> None:
+    """Show the permission rules `harness ask` applies, and where each came from."""
+    from harness.permissions import Permissions
+
+    typer.echo(Permissions.load(Path(repo).resolve(), accept_edits=accept_edits).describe())
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

@@ -19,6 +19,7 @@ SYSTEM_PROMPT = (
 )
 
 if TYPE_CHECKING:
+    from harness.permissions import Approver, PermissionEvent, Permissions
     from harness.todos import TodoList
     from harness.tool_loop import LoopStats
 
@@ -38,6 +39,9 @@ def ask_with_tools(
     mode: str = "execute",
     todos: "TodoList | None" = None,
     on_todos: Callable[["TodoList"], None] | None = None,
+    permissions: "Permissions | None" = None,
+    approver: "Approver | None" = None,
+    on_permission: "PermissionEvent | None" = None,
 ) -> Turn:
     from harness.hooks import HookPipeline, load_project_hooks
     from harness.plan_mode import PLAN_TOOLS, mode_prompt, plan_mode_policy, todo_tool
@@ -56,6 +60,10 @@ def ask_with_tools(
         # Plan mode: write tools are not offered, and the policy denies them anyway.
         definitions = [item for item in definitions if item["name"] in PLAN_TOOLS]
         hooks = HookPipeline((plan_mode_policy, *hooks.pre_tool), hooks.pre_model, hooks.post_tool)
+    if permissions is not None:
+        # Last pre_tool check, so nobody is asked about a call a hook would deny.
+        hooks = HookPipeline((*hooks.pre_tool, permissions.hook(approver, on_permission)),
+                             hooks.pre_model, hooks.post_tool)
     # Memory files are read for every question, so edits apply on the next one.
     sections = (SYSTEM_PROMPT, memory_prompt(load_memory(repo)), mode_prompt(mode, todos))
     system = "\n\n".join(part for part in sections if part)

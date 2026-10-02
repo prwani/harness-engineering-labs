@@ -82,7 +82,7 @@ of agent specs, todos and idempotent writes; `plan_mode.py` reuses
 
    **Observe:** the tool lines show only reads, Git reads and
    `write_todos`. The answer is a plan, and `/todos` shows the steps the
-   model recorded. If the model tries a write anyway, you see a `Denied:`
+   model recorded. If the model tries a write anyway, you see a `Hook: denied`
    line naming plan mode. `git status` in another terminal shows nothing
    changed.
 
@@ -125,7 +125,7 @@ of agent specs, todos and idempotent writes; `plan_mode.py` reuses
    ```
 
 6. **Record**
-   - Tools used in plan mode vs after `/execute`, and any `Denied:` lines.
+   - Tools used in plan mode vs after `/execute`, and any `Hook: denied` lines.
    - Differences between the final plan and `git diff --stat`.
    - Whether the open todos matched what was actually left to do.
 

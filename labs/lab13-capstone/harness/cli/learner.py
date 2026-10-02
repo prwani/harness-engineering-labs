@@ -12,7 +12,7 @@ def describe_session(session) -> str:
     return f"Session {session.session_id[:8]}{label}: {len(session.messages)} messages{fork}"
 
 
-def activity_events(activity: Activity):
+def activity_events(activity: Activity, root=None):
     """Show tool calls and hook decisions as permanent lines above the spinner."""
     from harness.chat import Events
 
@@ -23,7 +23,18 @@ def activity_events(activity: Activity):
         activity.echo(f"Tool: {name}({args})")
         activity.status(f"running {name}", announce=False)
 
+    def approver(name: str, args: dict, why: str) -> str:
+        from harness.permissions import subject
+
+        target = subject(root, name, args) if root else args
+        while True:
+            answer = activity.ask(f"Permission: {name}({target}) [{why}]\n"
+                                  "Allow? [y]es / [n]o / [a]lways this session: ").strip().lower()
+            if answer[:1] in {"y", "n", "a"} or not answer:
+                return answer[:1] or "n"
+
     return Events(
+        approver=approver,
         on_tool_call=on_tool_call,
         on_hook_denial=lambda name, reason: activity.echo(f"Hook: denied {name}: {reason}"),
         on_hook_feedback=lambda name, message: activity.echo(f"Hook: {name}: {message}"),
@@ -62,6 +73,9 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             plan: bool = typer.Option(
                 False, "--plan", help="Start in plan mode: read-only tools, no edits."
             ),
+            accept_edits: bool = typer.Option(
+                False, "--accept-edits", help="Allow write_file/edit_file without asking (rules still apply)."
+            ),
         ) -> None:
             """Ask a question or open the interactive prompt, in a saved session."""
             try:
@@ -70,14 +84,15 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     name=name, continue_latest=continue_latest, resume=resume, fork=fork
                 )
                 typer.echo(describe_session(session))
-                chat = Chat(create_model_client(), root, session, mode="plan" if plan else "execute")
+                chat = Chat(create_model_client(), root, session,
+                            mode="plan" if plan else "execute", accept_edits=accept_edits)
                 if plan:
                     typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
 
                 def respond(prompt: str) -> None:
                     stats = LoopStats()
                     with Activity() as activity:
-                        events = activity_events(activity)
+                        events = activity_events(activity, root)
                         turn = chat.ask(prompt, events, stats)
                     render_turn(turn, elapsed=activity.elapsed, stats=stats)
 
@@ -109,10 +124,14 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 def init_memory(extra: str) -> None:
                     respond(f"{INIT_PROMPT} {extra}".strip())
 
+                def show_permissions(_: str) -> None:
+                    typer.echo(chat.permissions.describe())
+
                 commands = {
                     "/session": show_session, "/history": show_history, "/todos": show_todos,
                     "/plan": enter_plan_mode, "/execute": execute,
                     "/memory": show_memory, "/init": init_memory,
+                    "/permissions": show_permissions,
                 }
                 if question is None:
                     run_interactive(
