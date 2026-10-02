@@ -226,6 +226,68 @@ def route(
         typer.echo(f"trace={result.trace}")
 
 
+@app.command("pge")
+def pge(
+    feature: str,
+    repo: Path = typer.Option(Path("."), "--repo", help="Project directory."),
+    max_revisions: int = typer.Option(2, "--max-revisions", min=0, help="Generator retries after a FAIL."),
+    no_evaluator: bool = typer.Option(
+        False, "--no-evaluator", help="Ablation: one generator pass with no independent check."
+    ),
+    runs: Path = typer.Option(Path(".runs"), "--runs", help="Folder for the run's trace file."),
+) -> None:
+    """Planner -> human gate -> generator -> evaluator, with bounded revisions."""
+    from contextlib import contextmanager
+
+    from harness.cli import learner
+    from harness.cli.interactive import Activity
+    from harness.pge import run_pge
+
+    root = repo.resolve()
+
+    def approve(plan: Path) -> bool:
+        typer.echo(f"{plan} written. Review it now (edit it if you disagree); the generator follows the file.")
+        return typer.confirm("Continue with this plan?", default=False)
+
+    @contextmanager
+    def node_events(name: str):
+        typer.echo(f"[{name}] started")
+        with Activity() as activity:
+            events = learner.activity_events(activity)
+            events.approver = None  # no one to ask: calls that would ask are denied
+            yield events
+
+    def node_done(run) -> None:
+        typer.echo(f"[{run.name}] llm_calls={run.model_calls} tool_calls={run.tool_calls} denied={run.denied}")
+
+    def verdict(name: str, result) -> None:
+        typer.echo(f"[{name}] {result.verdict} {result.failed_criteria}")
+        if result.feedback:
+            typer.echo(result.feedback)
+
+    try:
+        client = learner.create_model_client()
+        result = run_pge(
+            client, feature, root, approve_plan=approve, max_revisions=max_revisions,
+            evaluate=not no_evaluator, runs_dir=runs if runs.is_absolute() else root / runs,
+            node_events=node_events, on_node_done=node_done, on_verdict=verdict,
+        )
+    except Exception as error:
+        typer.echo(f"Unable to run pge: {error}", err=True)
+        raise typer.Exit(1) from error
+    messages = {
+        "PASS": "Accepted. Review git diff, then commit it yourself.",
+        "FAIL": f"Still FAIL after {max_revisions} revisions. Stopping; a human decides next.",
+        "STOPPED": "Plan not approved; nothing was implemented.",
+        "UNCHECKED": "Generated without an evaluator (--no-evaluator). Check it yourself.",
+    }
+    typer.echo(messages[result.outcome])
+    if result.trace:
+        typer.echo(f"trace={result.trace}")
+    if result.outcome == "FAIL":
+        raise typer.Exit(1)
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

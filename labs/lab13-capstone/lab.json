@@ -1,8 +1,12 @@
 {
   "number": 13,
   "slug": "capstone",
-  "title": "Planner, generator, evaluator capstone",
+  "title": "Capstone: planner, generator, evaluator",
   "capabilities": [
+    "harness pge planner-generator-evaluator",
+    "human plan gate",
+    "fresh-context evaluator with JSON verdict",
+    "bounded revision loop",
     "dynamic planner-generator-evaluator graph",
     "separate evaluator",
     "ablation metadata"
