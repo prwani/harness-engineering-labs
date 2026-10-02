@@ -288,6 +288,14 @@ def pge(
         raise typer.Exit(1)
 
 
+@app.command("features")
+def features() -> None:
+    """Map each capability you built to its command here and in Claude Code."""
+    from harness.native_harness import render_feature_map
+
+    typer.echo(render_feature_map())
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

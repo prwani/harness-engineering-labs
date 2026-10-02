@@ -1,92 +1,136 @@
 ---
 layout: default
-title: "Lab 14 — Native harness comparison"
+title: "Lab 14 — Cross-harness comparison"
 ---
 
-# Lab 14 — Native harness comparison
+# Lab 14 — Cross-harness comparison
 
-## Concept
+Run the **same task** under the same conditions in the harness you built,
+in Claude Code and/or another harness (the
+[Codex CLI track](../../existing-harnesses/codex-cli/)), then compare
+with measured numbers rather than impressions.
 
-Labs 0–13 built a harness from scratch to show exactly what one does. This
-lab proves the point from the other direction: Claude Code and Copilot CLI
-**are** harnesses too, and the same agent, the same skill, and the same
-mental model port onto them almost unchanged — because they're built out of
-the same layers.
+The exercise matches the
+[Claude Code Lab 14](../../existing-harnesses/claude-code/lab14-comparison/).
 
-**Key ideas**
-- `agents/catalog-fixer.md` is ported to each tool's native custom-agent
-  format; the `skills/product-description/` folder mounts **unchanged**;
-  store tools are exposed through a small MCP server wrapping the same
-  simulator used since Lab 8 — nothing about the *capability* changes, only
-  its host.
-- Both harnesses authenticate through Entra ID (`az login`), matching this
-  course's no-API-keys rule throughout.
-- Every custom harness feature has a native counterpart to map onto: the
-  approval policy → permission settings/hooks; `pre_tool`/`post_tool`/`on_stop`
-  → each tool's own hook types (the Lab 6 change-set check and Lab 7
-  redaction hook are ported as real hook scripts); todos/plan mode → plan
-  mode; spawning → sub-agents/workflows; compaction → automatic compaction;
-  tracing → OTel export or usage commands.
-- The same M1 scorecard (accuracy, safety, tokens) is collected here as in
-  every earlier lab, so the comparison is apples-to-apples: what did the
-  commercial harness give for free, and what could you *not* control — the
-  transcript, the compaction policy, per-call usage?
+## What changes
 
-This self-contained snapshot starts from Lab 13 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+- `harness features` prints each capability you built in Labs 2–13, the
+  command or file that drives it here, and its Claude Code counterpart.
+  Use it for the qualitative part of the comparison.
+- Nothing else: `harness ask --trace` and `harness trace` (Lab 7) already
+  measure a run.
 
-## Added in this lab
-
-- [`harness/native_harness.py`](harness/native_harness.py) adds
-  `ComparisonScorecard` / `ScorecardEntry` for comparing run metrics and
-  `render_comparison()` for tabular results.
-- The same module adds `LAYER_MAPPING`, `claude_code_mapping()`, and
-  `copilot_cli_mapping()` as reference mappings to native harness concepts.
+[`harness/native_harness.py`](harness/native_harness.py) holds the feature
+map, next to the earlier comparison scorecard schema and layer mappings.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab13-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Inspect how the harness maps to native Claude Code and Copilot CLI concepts:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from harness.native_harness import claude_code_mapping, copilot_cli_mapping
-
-   for layer, concept in claude_code_mapping().items():
-       print(f"{layer}: Claude Code → {concept}")
-       print(f"  Copilot CLI → {copilot_cli_mapping()[layer]}")
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   Compare each pair and note which capabilities are provided by the native
-   harness versus defined in an agent or skill.
-3. Run `pytest checks/test_native_harness.py` for deterministic verification,
-   then `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's native-harness mapping.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+2. Fix the task and the conditions. Use one well-specified task with an
+   objective check:
 
-## External integrations
+   ```text
+   Add a `python cli.py export --format json` command that prints the catalog as a JSON array of objects with integer price_cents and stock. Add tests. Run the full test suite and stop only when it passes. Do not commit.
+   ```
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- Claude Code and Copilot CLI runs
+   Keep these identical across harnesses, and write them down: starting
+   commit (`lab13-done`), model/deployment, instruction files
+   (`HARNESS.md`/`CLAUDE.md`/`AGENTS.md` with the same content),
+   permissions (edits auto-accepted, tests allowed, no network, no push),
+   hooks (the Lab 11 stop gate is in `.harness/settings.json`; install the
+   equivalent elsewhere or remove it everywhere) and a turn or budget
+   limit. Set `HARNESS_PRICE_INPUT`/`HARNESS_PRICE_OUTPUT` in this lab's
+   `.env` to the list prices of your deployment.
 
-All live paths must use Entra credentials and must not add API-key configuration.
+3. Run it in your harness:
+
+   ```bash
+   task='Add a `python cli.py export --format json` command that prints the catalog as a JSON array of objects with integer price_cents and stock. Add tests. Run the full test suite and stop only when it passes. Do not commit.'
+   git switch -c compare/harness lab13-done
+   harness ask --accept-edits --max-iterations 30 --trace .runs/lab14-harness.jsonl "$task"
+   python -m pytest -q
+   harness trace .runs/lab14-harness.jsonl
+   git diff --stat lab13-done
+   ```
+
+   ```powershell
+   $task = 'Add a `python cli.py export --format json` command that prints the catalog as a JSON array of objects with integer price_cents and stock. Add tests. Run the full test suite and stop only when it passes. Do not commit.'
+   git switch -c compare/harness lab13-done
+   harness ask --accept-edits --max-iterations 30 --trace .runs\lab14-harness.jsonl $task
+   python -m pytest -q
+   harness trace .runs\lab14-harness.jsonl
+   git diff --stat lab13-done
+   ```
+
+   Repeat once or twice if you can (append to the same trace, or use a new
+   file per run); one run is an anecdote.
+
+4. Run it elsewhere. Commit the previous run's changes on its own branch
+   (or discard them) so they don't follow you, then check out a fresh
+   branch from `lab13-done` for each other harness
+   (`git switch -c compare/claude lab13-done`), run the same prompt with
+   that harness's equivalent headless and permission settings (see
+   [Claude Code Lab 14](../../existing-harnesses/claude-code/lab14-comparison/)),
+   and capture its own event log or usage output.
+
+5. Compare:
+
+   | Metric | This harness | Other harness | How measured |
+   |---|---|---|---|
+   | Tests pass at the end | | | `python -m pytest -q` |
+   | Files changed / lines | | | `git diff --stat lab13-done` |
+   | LLM calls | | | `harness trace` / event stream |
+   | Tool calls (by type) | | | `harness trace` / event stream |
+   | Input / output tokens | | | `harness trace` / event stream |
+   | Cost estimate | | | list price × tokens |
+   | Wall-clock time | | | `harness trace` duration / stopwatch |
+   | Policy violations | | | denials, hooks, manual review |
+
+   And qualitatively, with `harness features` beside you: which
+   capabilities were **built in**, **configured** (settings, hooks,
+   skills), **orchestrated by you** (Labs 11–13) or **unavailable** in each
+   harness? Which ones could you change in your own harness that you
+   couldn't elsewhere (the transcript, the compaction prompt, the loop
+   bound)?
+
+6. **Caveats**
+   - Only compare numbers produced under matching conditions. Cost
+     figures are estimates from token counts and list prices, not your
+     Azure bill.
+   - Your harness's system prompt and tool set are much smaller than a
+     commercial harness's; a lower token count isn't automatically better
+     if the task isn't done.
+   - Don't report scores you didn't observe.
+
+7. **Checkpoint.** Keep the branch whose result you prefer (or none),
+   switch back to `main`:
+
+   ```bash
+   git switch main
+   git tag lab14-done
+   ```
+
+8. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+This snapshot contains every capability from Labs 2–13. This is a teaching
+harness, not a sandbox: only use it on the practice app.

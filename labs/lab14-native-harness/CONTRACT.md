@@ -7,10 +7,13 @@
 
 ## Capability additions
 
-- comparison scorecard schema
-- Claude Code mapping
-- Copilot CLI mapping
+- `harness features`: each capability from Labs 2–13, the command or file that
+  drives it, and its Claude Code counterpart
+- the comparison uses existing measurement: `harness ask --trace` and
+  `harness trace` (Lab 7)
+- comparison scorecard schema and layer mappings (`native_harness.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness` retains every capability from Labs 2–13: `harness ask` with stop
+hooks, compaction, subagents and background agents, skills and MCP, tracing,
+permissions, file memory, plan mode and todos, sessions and the Lab 2B tool loop;
+`harness route` and `harness pge`.
