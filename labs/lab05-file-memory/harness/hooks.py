@@ -49,21 +49,32 @@ class HookPipeline:
 
 
 def validate_history(messages: list[dict[str, Any]]) -> None:
-    """Each completed tool batch must follow an assistant turn with one result per call."""
+    """Every assistant turn with tool calls is followed by one result per call.
+
+    A conversation can hold many questions: user question, then zero or more
+    (assistant calls, tool results) batches, then a final assistant answer.
+    """
     if not messages or messages[0]["role"] != "user":
         raise ValueError("History must start with a user message.")
-    if (len(messages) - 1) % 2:
-        raise ValueError("History contains an incomplete tool batch.")
-    for offset in range(1, len(messages), 2):
-        assistant, results = messages[offset:offset + 2]
-        if assistant["role"] != "assistant" or results["role"] != "tool":
+    pending: list[str] | None = None
+    for message in messages:
+        if pending is not None:
+            if message["role"] != "tool":
+                raise ValueError("History must alternate assistant calls and tool results.")
+            if [result["call_id"] for result in message["content"]] != pending:
+                raise ValueError("Every tool call must have one result with the same ID.")
+            pending = None
+        elif message["role"] == "tool":
             raise ValueError("History must alternate assistant calls and tool results.")
-        call_ids = assistant["call_ids"]
-        result_ids = [result["call_id"] for result in results["content"]]
-        if not call_ids or any(not call_id for call_id in call_ids):
-            raise ValueError("Tool call IDs must be nonempty.")
-        if len(call_ids) != len(set(call_ids)) or result_ids != call_ids:
-            raise ValueError("Every tool call must have one result with the same ID.")
+        elif message["role"] == "assistant" and "call_ids" in message:
+            call_ids = message["call_ids"]
+            if not call_ids or any(not call_id for call_id in call_ids):
+                raise ValueError("Tool call IDs must be nonempty.")
+            if len(call_ids) != len(set(call_ids)):
+                raise ValueError("Every tool call must have one result with the same ID.")
+            pending = list(call_ids)
+    if pending is not None:
+        raise ValueError("History contains an incomplete tool batch.")
 
 
 # Teaching policy, not a sandbox: deny the Git subcommands that discard work,

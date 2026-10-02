@@ -23,6 +23,8 @@ def ask_with_tools(
     on_hook_feedback: Callable[[str, str], None] | None = None,
     on_model_call: Callable[[int], None] | None = None,
     stats: "LoopStats | None" = None,
+    history: list[dict[str, Any]] | None = None,
+    on_message: Callable[[dict[str, Any]], None] | None = None,
 ) -> Turn:
     from harness.hooks import load_project_hooks
     from harness.tool_loop import run_tool_loop
@@ -47,4 +49,6 @@ def ask_with_tools(
         on_hook_denial=on_hook_denial,
         on_model_call=on_model_call,
         stats=stats,
+        history=history,
+        on_message=on_message,
     )

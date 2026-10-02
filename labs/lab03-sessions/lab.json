@@ -4,6 +4,7 @@
   "title": "History and sessions",
   "capabilities": [
     "JSONL session persistence",
+    "continue, resume and fork sessions",
     "resume recovery",
     "history validation"
   ],
