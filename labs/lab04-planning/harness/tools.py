@@ -1,7 +1,8 @@
-"""Local repository helpers plus intentionally unrestricted CLI tools."""
+"""Local repository helpers, file edits, tests, and intentionally unrestricted CLI tools."""
 
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any
 
 
@@ -94,6 +95,40 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
             raise ValueError("File exceeds the 100 KB read limit.")
         return path.read_text(encoding="utf-8")[:20_000]
 
+    def write_file(args: dict[str, Any]) -> str:
+        path = _safe_path(root, str(args["path"]))
+        if path == root or path.is_dir():
+            raise ValueError("Requested path is a directory.")
+        content = str(args["content"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return f"Wrote {len(content)} characters to {path.relative_to(root).as_posix()}."
+
+    def edit_file(args: dict[str, Any]) -> str:
+        path = _safe_path(root, str(args["path"]))
+        if not path.is_file():
+            raise ValueError("Requested path is not a regular file.")
+        old, new = str(args["old_text"]), str(args["new_text"])
+        text = path.read_text(encoding="utf-8")
+        count = text.count(old) if old else 0
+        if count != 1:
+            raise ValueError(f"old_text must match exactly once; it matched {count} times.")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+        return f"Edited {path.relative_to(root).as_posix()}."
+
+    def run_tests(args: dict[str, Any]) -> str:
+        command = [sys.executable, "-m", "pytest", "-q"]
+        if args.get("path"):
+            command.append(_safe_path(root, str(args["path"])).relative_to(root).as_posix())
+        try:
+            result = subprocess.run(
+                command, cwd=root, check=False, capture_output=True, text=True, timeout=120,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("Tests timed out after 120 seconds.") from error
+        output = (result.stdout + result.stderr).strip()
+        return f"exit_code={result.returncode}\n{output[-8_000:]}"
+
     def git_status(_: dict[str, Any]) -> str:
         return _run(["git", "status", "--short", "--branch"], cwd=root)
 
@@ -113,6 +148,9 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
     tools: dict[str, Any] = {
         "list_files": list_files,
         "read_file": read_file,
+        "write_file": write_file,
+        "edit_file": edit_file,
+        "run_tests": run_tests,
         "git_status": git_status,
         "git_log": git_log,
         "git_cli": git_cli,
@@ -136,6 +174,42 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
                 "type": "object",
                 "properties": {"path": {"type": "string", "description": "Repository-relative file path"}},
                 "required": ["path"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "write_file",
+            "description": "Create or overwrite a UTF-8 text file under the repository root.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Repository-relative file path"},
+                    "content": {"type": "string", "description": "Complete new file content"},
+                },
+                "required": ["path", "content"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "edit_file",
+            "description": "Replace one exact, unique occurrence of old_text with new_text in a file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Repository-relative file path"},
+                    "old_text": {"type": "string", "description": "Exact text that appears once"},
+                    "new_text": {"type": "string", "description": "Replacement text"},
+                },
+                "required": ["path", "old_text", "new_text"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "run_tests",
+            "description": "Run pytest -q in the repository; returns the exit code and output.",
+            "input_schema": {
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "Optional test file or directory"}},
                 "additionalProperties": False,
             },
         },

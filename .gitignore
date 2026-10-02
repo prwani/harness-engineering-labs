@@ -1,3 +1,6 @@
 # Local-only Claude Code testing artifacts (not for the remote repo)
 /claude-code.env.ps1
 /.azure-cli/
+
+# Build-your-own labs: the learner practice app (its own git repo)
+/labs/app/

@@ -70,9 +70,21 @@ or API keys there.
    the harness has no tools or memory, so it cannot inspect files or remember
    the previous question. To run a single turn without opening the prompt, use
    `harness ask "What is the capital of Japan?"`.
-3. Run `pytest checks/test_bare.py` for deterministic offline verification,
+3. Ask about the practice app. Start from the app at tag `lab00-done`:
+
+   ```bash
+   cd ../app
+   harness ask "What does this project's README say? Which files are in it?"
+   ```
+
+   **Observe:** the model can't see your files. It either says so or makes
+   up a plausible answer. Record which one it did. This is the gap Lab 2A
+   closes: the same question with tools gets an answer based on the files.
+   Return to the lab folder (`cd ../lab01-bare-call`) and tag the app with
+   `git -C ../app tag lab01-done`.
+4. Run `pytest checks/test_bare.py` for deterministic offline verification,
    then `pytest checks/` for the full snapshot regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
+5. Inspect the snapshot's declared capabilities with `harness lab-info`.
 
 ## External integrations
 

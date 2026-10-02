@@ -89,3 +89,29 @@ def test_list_files_stops_after_one_hundred_files(tmp_path):
 
     assert len(listed) == 100
     assert listed[0] == "file000.txt" and listed[-1] == "file099.txt"
+
+
+def test_write_and_edit_file_stay_inside_repository(tmp_path):
+    tools, _ = build_tools(tmp_path)
+
+    assert tools["write_file"]({"path": "pkg/app.py", "content": "x = 1\n"}).startswith("Wrote")
+    assert tools["edit_file"]({"path": "pkg/app.py", "old_text": "x = 1", "new_text": "x = 2"}) == (
+        "Edited pkg/app.py."
+    )
+    assert (tmp_path / "pkg" / "app.py").read_text() == "x = 2\n"
+    with pytest.raises(ValueError, match="outside"):
+        tools["write_file"]({"path": "../escape.txt", "content": "no"})
+    with pytest.raises(ValueError, match="exactly once"):
+        tools["edit_file"]({"path": "pkg/app.py", "old_text": "missing", "new_text": "y"})
+
+
+def test_run_tests_reports_exit_code_for_passing_and_failing_suites(tmp_path):
+    tools, _ = build_tools(tmp_path)
+    (tmp_path / "test_ok.py").write_text("def test_ok():\n    assert True\n")
+
+    assert tools["run_tests"]({}).startswith("exit_code=0")
+
+    (tmp_path / "test_bad.py").write_text("def test_bad():\n    assert 1 == 2\n")
+    result = tools["run_tests"]({"path": "test_bad.py"})
+    assert result.startswith("exit_code=1")
+    assert "test_bad" in result

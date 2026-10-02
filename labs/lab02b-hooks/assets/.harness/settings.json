@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "pre_tool": [
+      {
+        "matcher": "write_file|edit_file",
+        "command": ["python", ".harness/hooks/protect_catalog.py"]
+      }
+    ],
+    "post_tool": [
+      {
+        "matcher": "write_file|edit_file",
+        "command": ["python", ".harness/hooks/run_tests.py"]
+      }
+    ]
+  }
+}

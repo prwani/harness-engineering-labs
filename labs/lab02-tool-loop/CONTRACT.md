@@ -8,6 +8,7 @@
 ## Capability additions
 
 - tool registry
+- `write_file`, `edit_file`, and `run_tests` tools rooted in the working directory
 - unrestricted Git CLI, Azure CLI, and shell tools
 - canonical transcript IDs
 - bounded tool loop

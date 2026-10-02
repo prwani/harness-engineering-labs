@@ -75,6 +75,36 @@ through `DefaultAzureCredential`; do not add API keys.
    call without tools or conversation history. `pytest checks/` remains the
    offline regression check; it does not replace this learner-facing Foundry call.
 
+3. Create the practice app, once for the whole course. Later labs use their
+   harness on this app. It is its own git repository and is gitignored by
+   the course repo (see the [track guide](../README.md#working-in-labsapp)):
+
+   ```bash
+   mkdir ../app && cd ../app
+   git init -b main
+   printf '# Pet store practice app\n\nSynthetic data only. Built with my own harness during the labs.\n' > README.md
+   printf '.env\n.env.*\n__pycache__/\n.pytest_cache/\n*.log\n' > .gitignore
+   git add . && git commit -m "chore: start practice app"
+   git tag lab00-done
+   ```
+
+   On Windows PowerShell:
+
+   ```powershell
+   New-Item -ItemType Directory ..\app | Out-Null; cd ..\app
+   git init -b main
+   "# Pet store practice app`n`nSynthetic data only. Built with my own harness during the labs." | Set-Content README.md
+   ".env`n.env.*`n__pycache__/`n.pytest_cache/`n*.log" | Set-Content .gitignore
+   git add . ; git commit -m "chore: start practice app"
+   git tag lab00-done
+   ```
+
+   With the Lab 0 virtual environment still active, run
+   `harness ask "Reply with OK if you can read this."` from `app/`. The
+   `harness` command reads the `.env` file from the lab folder, so a reply
+   confirms that Foundry works from the app. Lab 0 has no tools, so it
+   cannot read the app's files yet. Lab 2A adds that.
+
 Start the simulator in a separate terminal before inspecting or resetting it:
 
 ```bash
@@ -92,4 +122,5 @@ harness sim status
 - `harness sim start`, `harness sim status`, and `harness sim reset` manage
   the local simulator.
 
-The next snapshot will add the first bare model call.
+**Done when:** `git tag` in `app/` lists `lab00-done` and a question was
+answered through Foundry. The next snapshot adds the first bare model call.

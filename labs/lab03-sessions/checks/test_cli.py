@@ -81,7 +81,7 @@ def test_ask_reports_hook_denial_without_running_shell(monkeypatch, tmp_path):
     result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "Run shell"])
 
     assert result.exit_code == 0
-    assert "Hook: denied shell: shell commands are disabled in Lab 2B" in result.output
+    assert "Hook: denied shell: shell commands are disabled" in result.output
     assert "The hook denied shell execution." in result.output
 
 
@@ -135,3 +135,24 @@ def test_activity_spinner_redraws_and_clears_on_a_terminal():
     assert "Tool: git_status({})\n" in output
     assert output.endswith("\r")
     assert activity.elapsed > 0
+
+
+def test_ask_prints_project_hook_feedback(monkeypatch, tmp_path):
+    from harness.cli import learner
+    from harness.models import ScriptedModel, ToolCall, Turn
+
+    (tmp_path / ".harness" / "rules").mkdir(parents=True)
+    (tmp_path / ".harness" / "rules" / "pricing.md").write_text("---\npaths: pricing.py\n---\nUse cents.\n")
+    (tmp_path / "pricing.py").write_text("TAX = 1\n")
+    monkeypatch.setattr(
+        learner, "create_model_client",
+        lambda: ScriptedModel([
+            Turn(text="", tool_calls=[ToolCall("call_1", "read_file", {"path": "pricing.py"})]),
+            Turn(text="Pricing uses cents."),
+        ]),
+    )
+
+    result = runner.invoke(app, ["ask", "--repo", str(tmp_path), "Read pricing.py"])
+
+    assert result.exit_code == 0
+    assert "Hook: read_file: loaded rule pricing.md for pricing.py" in result.output
