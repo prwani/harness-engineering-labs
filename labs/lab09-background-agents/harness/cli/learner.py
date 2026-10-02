@@ -51,6 +51,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
         from harness.project_memory import INIT_PROMPT, describe_memory
         from harness.session import SessionStore
         from harness.tool_loop import LoopStats
+        from harness.tracing import describe_context, describe_cost
 
         @app.command("ask")
         def ask(
@@ -76,6 +77,9 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             accept_edits: bool = typer.Option(
                 False, "--accept-edits", help="Allow write_file/edit_file without asking (rules still apply)."
             ),
+            trace: Path | None = typer.Option(
+                None, "--trace", help="Append every step of each run to this JSONL file."
+            ),
         ) -> None:
             """Ask a question or open the interactive prompt, in a saved session."""
             try:
@@ -85,7 +89,8 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 )
                 typer.echo(describe_session(session))
                 chat = Chat(create_model_client(), root, session,
-                            mode="plan" if plan else "execute", accept_edits=accept_edits)
+                            mode="plan" if plan else "execute", accept_edits=accept_edits,
+                            trace_path=trace)
                 if plan:
                     typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
 
@@ -132,6 +137,8 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     "/plan": enter_plan_mode, "/execute": execute,
                     "/memory": show_memory, "/init": init_memory,
                     "/permissions": show_permissions,
+                    "/cost": lambda _: typer.echo(describe_cost(chat.meter)),
+                    "/context": lambda _: typer.echo(describe_context(chat.meter)),
                 }
                 if question is None:
                     run_interactive(

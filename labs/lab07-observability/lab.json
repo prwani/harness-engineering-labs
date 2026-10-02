@@ -3,8 +3,10 @@
   "slug": "observability",
   "title": "Observability and prompt caching",
   "capabilities": [
+    "JSONL run traces",
+    "trace summary and cost estimate",
+    "/cost and /context",
     "OpenTelemetry event model",
-    "usage cost attribution",
     "result redaction",
     "cache boundaries"
   ],

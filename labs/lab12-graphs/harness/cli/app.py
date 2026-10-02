@@ -92,6 +92,20 @@ def permissions(
     typer.echo(Permissions.load(Path(repo).resolve(), accept_edits=accept_edits).describe())
 
 
+@app.command("trace")
+def trace_summary(
+    path: Path = typer.Argument(..., help="JSONL file written by `harness ask --trace`."),
+    input_price: float | None = typer.Option(None, "--input-price", help="USD per 1M input tokens."),
+    output_price: float | None = typer.Option(None, "--output-price", help="USD per 1M output tokens."),
+) -> None:
+    """Summarize a trace: LLM calls, tokens, tools, hooks, permissions, time and cost."""
+    from harness.tracing import prices, summarize
+
+    default_in, default_out = prices()
+    typer.echo(summarize(path, input_price if input_price is not None else default_in,
+                         output_price if output_price is not None else default_out))
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""
