@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "run_tests",
+      "git_cli(status*)",
+      "git_cli(diff*)",
+      "git_cli(log*)"
+    ],
+    "ask": [
+      "git_cli(commit *)"
+    ],
+    "deny": [
+      "git_cli(push*)",
+      "read_file(.env)",
+      "read_file(.env.*)",
+      "write_file(catalog.csv)",
+      "edit_file(catalog.csv)",
+      "write_file(tests/test_bulk_discount.py)",
+      "edit_file(tests/test_bulk_discount.py)"
+    ]
+  },
+  "hooks": {
+    "pre_tool": [
+      {
+        "matcher": "write_file|edit_file",
+        "command": ["python", ".harness/hooks/protect_catalog.py"]
+      }
+    ],
+    "post_tool": [
+      {
+        "matcher": "write_file|edit_file",
+        "command": ["python", ".harness/hooks/run_tests.py"]
+      }
+    ],
+    "stop": [
+      {
+        "command": ["python", ".harness/hooks/stop_gate.py"]
+      }
+    ]
+  }
+}

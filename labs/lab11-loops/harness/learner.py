@@ -47,8 +47,11 @@ def ask_with_tools(
     extra_definitions: list[dict[str, Any]] | None = None,
     extra_prompt: str = "",
     agent: "AgentDefinition | None" = None,
+    max_iterations: int = MAX_ITERATIONS,
 ) -> Turn:
-    from harness.hooks import HookPipeline, load_project_hooks
+    from dataclasses import replace
+
+    from harness.hooks import load_project_hooks
     from harness.plan_mode import PLAN_TOOLS, mode_prompt, plan_mode_policy, todo_tool
     from harness.project_memory import load_memory, memory_prompt
     from harness.tool_loop import run_tool_loop
@@ -69,15 +72,15 @@ def ask_with_tools(
         from harness.agents import agent_tool_policy
 
         definitions = [item for item in definitions if agent.allows(item["name"])]
-        hooks = HookPipeline((agent_tool_policy(agent), *hooks.pre_tool), hooks.pre_model, hooks.post_tool)
+        # Stop hooks gate the main conversation's answer, not a subagent's.
+        hooks = replace(hooks, pre_tool=(agent_tool_policy(agent), *hooks.pre_tool), stop=())
     if mode == "plan":
         # Plan mode: write tools are not offered, and the policy denies them anyway.
         definitions = [item for item in definitions if item["name"] in PLAN_TOOLS]
-        hooks = HookPipeline((plan_mode_policy, *hooks.pre_tool), hooks.pre_model, hooks.post_tool)
+        hooks = replace(hooks, pre_tool=(plan_mode_policy, *hooks.pre_tool), stop=())
     if permissions is not None:
         # Last pre_tool check, so nobody is asked about a call a hook would deny.
-        hooks = HookPipeline((*hooks.pre_tool, permissions.hook(approver, on_permission)),
-                             hooks.pre_model, hooks.post_tool)
+        hooks = replace(hooks, pre_tool=(*hooks.pre_tool, permissions.hook(approver, on_permission)))
     # Memory files are read for every question, so edits apply on the next one.
     if agent is not None:
         from harness.agents import SUBAGENT_NOTES
@@ -93,7 +96,7 @@ def ask_with_tools(
         system,
         tools,
         tool_definitions=definitions,
-        max_iterations=MAX_ITERATIONS,
+        max_iterations=max_iterations,
         hooks=hooks,
         on_tool_call=on_tool_call,
         on_hook_denial=on_hook_denial,

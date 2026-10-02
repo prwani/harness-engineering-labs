@@ -111,6 +111,7 @@ def format_summary(stats: "LoopStats") -> str:
         f"Summary: llm_calls={stats.model_calls}, tool_calls={stats.tool_calls}, "
         f"denied={stats.denied_calls}, tool_errors={stats.tool_errors}, "
         f"model_time={stats.model_seconds:.1f}s, tool_time={stats.tool_seconds:.1f}s"
+        + (f", stop_blocks={stats.stop_blocks}" if getattr(stats, "stop_blocks", 0) else "")
     )
 
 

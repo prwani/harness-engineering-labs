@@ -56,6 +56,7 @@ class Chat:
     def __init__(self, client: ModelClient, repo: Path, session: Session,
                  *, mode: str = "execute", accept_edits: bool = False,
                  trace_path: Path | None = None, compact_at: int | None = None,
+                 max_iterations: int | None = None,
                  on_mcp_error: Callable[[str, Exception], None] | None = None) -> None:
         self.repo, self.session = repo, session
         # Every model call is measured; with a trace path every step is also recorded.
@@ -72,6 +73,7 @@ class Chat:
         self.agent_runs = 0
         # Auto-compact before a question once the last request reached this many input tokens.
         self.compact_at = compact_at
+        self.max_iterations = max_iterations
         self.servers: list[MCPServer] = start_servers(repo, on_mcp_error)
 
     def close(self) -> None:
@@ -166,6 +168,7 @@ class Chat:
                 extra_definitions=definitions,
                 extra_prompt="\n\n".join(part for part in (skills_prompt(self.skills),
                                                              agents_prompt(self.agents)) if part),
+                **({"max_iterations": self.max_iterations} if self.max_iterations else {}),
                 **events.as_kwargs(),
             )
         except Exception as caught:
@@ -176,7 +179,7 @@ class Chat:
                 self.trace.write(
                     "run_end", seconds=round(perf_counter() - started, 3), llm_calls=stats.model_calls,
                     tool_calls=stats.tool_calls, denied=stats.denied_calls,
-                    tool_errors=stats.tool_errors, error=error,
+                    tool_errors=stats.tool_errors, stop_blocks=stats.stop_blocks, error=error,
                 )
 
     def _agent_runner(self, events: Events, tools: dict[str, Any],

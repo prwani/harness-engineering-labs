@@ -21,6 +21,9 @@ PreToolHook = Callable[[str, dict[str, Any]], ToolDecision]
 PreModelHook = Callable[[list[dict[str, Any]]], None]
 PostToolHook = Callable[[str, dict[str, Any], str], str]
 HookFeedback = Callable[[str, str], None]
+# A stop hook sees the final answer (and whether a stop hook already sent the model
+# back during this question); returning feedback sends the model back to work.
+StopHook = Callable[[str, bool], "str | None"]
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,7 @@ class HookPipeline:
     pre_tool: tuple[PreToolHook, ...] = ()
     pre_model: tuple[PreModelHook, ...] = ()
     post_tool: tuple[PostToolHook, ...] = ()
+    stop: tuple[StopHook, ...] = ()
 
     def before_model(self, messages: list[dict[str, Any]]) -> None:
         for hook in self.pre_model:
@@ -46,6 +50,12 @@ class HookPipeline:
         for hook in self.post_tool:
             output = hook(name, args, output)
         return output
+
+    def on_stop(self, text: str, active: bool) -> str | None:
+        for hook in self.stop:
+            if feedback := hook(text, active):
+                return feedback
+        return None
 
 
 def validate_history(messages: list[dict[str, Any]]) -> None:
@@ -213,12 +223,36 @@ def _post_command_hook(root: Path, entry: dict[str, Any], on_feedback: HookFeedb
     return hook
 
 
+def _stop_command_hook(root: Path, entry: dict[str, Any], on_feedback: HookFeedback | None) -> StopHook:
+    _, command = _command(root, entry)
+
+    def hook(text: str, active: bool) -> str | None:
+        payload = {"event": "stop", "stop_hook_active": active, "cwd": str(root),
+                   "last_message": text[:4_000]}
+        try:
+            result = _run_hook(root, command, payload, 300)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            if on_feedback:
+                on_feedback("stop", f"{command[-1]} could not run: {error}")
+            return None
+        if result.returncode != 2:
+            return None
+        message = result.stderr.strip() or f"{command[-1]} says the task is not done"
+        if on_feedback:
+            on_feedback("stop", message.splitlines()[0])
+        return f"Stop hook feedback ({command[-1]}):\n{message[-4_000:]}"
+
+    return hook
+
+
 def load_project_hooks(repo: Path, on_feedback: HookFeedback | None = None) -> HookPipeline:
     """Build hooks from `.harness/settings.json` and `.harness/rules/` in the project.
 
     Project hooks are commands, like Claude Code hooks: they receive the tool call as
     JSON on stdin. A pre_tool hook that exits with code 2 blocks the call (stderr is the
     reason). A post_tool hook that exits with code 2 sends its stderr back to the model.
+    A stop hook runs when the model gives its final answer; exit code 2 sends stderr
+    back and the loop continues (bounded by the loop, not by the hook).
     """
     root = repo.resolve()
     settings_file = root / ".harness" / "settings.json"
@@ -233,7 +267,8 @@ def load_project_hooks(repo: Path, on_feedback: HookFeedback | None = None) -> H
     post_tool = [_post_command_hook(root, entry, on_feedback) for entry in hooks.get("post_tool", [])]
     if rules := load_rules(root):
         post_tool.insert(0, _rules_hook(root, rules, on_feedback))
-    return HookPipeline(pre_tool=pre_tool, post_tool=tuple(post_tool))
+    stop = tuple(_stop_command_hook(root, entry, on_feedback) for entry in hooks.get("stop", []))
+    return HookPipeline(pre_tool=pre_tool, post_tool=tuple(post_tool), stop=stop)
 
 
 __all__ = [

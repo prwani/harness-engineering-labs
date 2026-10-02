@@ -87,6 +87,10 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 None, "--compact-at", min=1000,
                 help="Compact automatically before a question once a request reaches this many input tokens.",
             ),
+            max_iterations: int | None = typer.Option(
+                None, "--max-iterations", min=1,
+                help="Most model calls per question (default 30), including stop-hook retries.",
+            ),
             background: bool = typer.Option(
                 False, "--bg", help="Run the question detached in a new worktree; needs -n NAME."
             ),
@@ -111,6 +115,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 chat = Chat(create_model_client(), root, session,
                             mode="plan" if plan else "execute", accept_edits=accept_edits,
                             trace_path=trace, compact_at=compact_at,
+                            max_iterations=max_iterations,
                             on_mcp_error=lambda name, error: typer.echo(
                                 f"MCP server {name} failed to start: {error}", err=True))
                 if plan:

@@ -12,6 +12,7 @@ from harness.models.adapters import ModelClient
 
 
 Tool = Callable[[dict[str, Any]], str]
+MAX_STOP_BLOCKS = 3
 
 
 @dataclass
@@ -24,6 +25,7 @@ class LoopStats:
     tool_errors: int = 0
     model_seconds: float = 0.0
     tool_seconds: float = 0.0
+    stop_blocks: int = 0
 
 
 def run_tool_loop(
@@ -40,6 +42,7 @@ def run_tool_loop(
     stats: LoopStats | None = None,
     history: list[dict[str, Any]] | None = None,
     on_message: Callable[[dict[str, Any]], None] | None = None,
+    max_stop_blocks: int = MAX_STOP_BLOCKS,
 ) -> Turn:
     """Run one question to completion.
 
@@ -59,7 +62,9 @@ def run_tool_loop(
         pre_tool=(command_policy, *(hooks.pre_tool if hooks else ())),
         pre_model=(*(hooks.pre_model if hooks else ()), validate_history),
         post_tool=hooks.post_tool if hooks else (),
+        stop=hooks.stop if hooks else (),
     )
+    blocks = 0
     stats = stats if stats is not None else LoopStats()
     total_usage = Usage()
     for _ in range(max_iterations):
@@ -85,6 +90,13 @@ def run_tool_loop(
         )
         if not turn.tool_calls:
             append({"role": "assistant", "content": turn.raw or turn.text or "(no text)"})
+            # Stop hooks decide whether the answer ends the run; the loop bounds them.
+            if blocks < max_stop_blocks and (feedback := pipeline.on_stop(turn.text, blocks > 0)):
+                blocks += 1
+                stats.stop_blocks += 1
+                append({"role": "user", "content": (
+                    f"You are not done (stop hook, attempt {blocks}/{max_stop_blocks}).\n{feedback}")})
+                continue
             return Turn(
                 turn.text,
                 turn.tool_calls,
