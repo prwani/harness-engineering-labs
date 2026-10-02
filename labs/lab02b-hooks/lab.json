@@ -4,7 +4,11 @@
   "title": "Lab 2B: Tool hooks and command policy",
   "capabilities": [
     "tool registry",
+    "file write and edit tools",
+    "test runner tool",
     "CLI tools with pre-tool command policy",
+    "project command hooks (pre_tool and post_tool)",
+    "path-scoped project rules",
     "canonical transcript IDs",
     "bounded tool loop",
     "pre-model history validation",

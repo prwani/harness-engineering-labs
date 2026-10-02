@@ -4,6 +4,8 @@
   "title": "Lab 2A: Tool loop and unrestricted CLI tools",
   "capabilities": [
     "tool registry",
+    "file write and edit tools",
+    "test runner tool",
     "unrestricted CLI tools",
     "canonical transcript IDs",
     "bounded tool loop"

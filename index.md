@@ -15,8 +15,10 @@ Each lab is a **standalone snapshot** — copy or download any one independently
 and run its checks from inside its directory with `pytest checks/`. Snapshots
 do not import from one another.
 
-Start with **[Lab 0 — Setup](labs/lab00-setup/README.html)**, then work
-through the labs in order. See the full **[Lab Outline](lab-outline.html)**
+Start with the **[track guide](labs/README.html)** and
+**[Lab 0 — Setup](labs/lab00-setup/README.html)**, then work through the labs
+in order. From Lab 2A on, you use your harness to build and extend a small
+pet-store practice app, the same app as in the Claude Code track. See the full **[Lab Outline](lab-outline.html)**
 for the mental model, design principles, and detailed rationale behind the
 course.
 
@@ -26,8 +28,8 @@ course.
 |---|-----|-------|
 | 0 | [Setup, dual API, and scorecard](labs/lab00-setup/README.html) | Entra configuration, dual model adapters, usage ledger, store simulator |
 | 1 | [Bare model call](labs/lab01-bare-call/README.html) | Stateless bare call, `StoreHealthReport` envelope, deterministic scorecard grading |
-| 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop/README.html) | Tool registry and unrestricted Git, Azure CLI, and shell tools |
-| 2B | [Tool hooks and command policy](labs/lab02b-hooks/README.html) | Pre-tool policy, pre-model history validation, paired denials |
+| 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop/README.html) | Tool loop with file, test, Git, Azure CLI, and shell tools; build the practice app |
+| 2B | [Tool hooks and command policy](labs/lab02b-hooks/README.html) | Built-in policy, project hooks, scoped rules, paired denials |
 | 3 | [History and sessions](labs/lab03-sessions/README.html) | JSONL session persistence, resume recovery, history validation |
 | 4 | [Planning and todos](labs/lab04-planning/README.html) | Planner and executor modes, harness-owned todos, idempotent writes |
 | 5 | [File memory and access](labs/lab05-file-memory/README.html) | Session memory, optimistic concurrency, path scope enforcement |

@@ -659,11 +659,12 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 **Task:** the M1 task, unchanged.
 
 **Build**
-1. **Tool registry:** local repository helpers and unrestricted `git_cli`, `azure_cli`, and `shell` tools. The learner's current directory is the default starting directory. These commands run with the learner's OS permissions; only use disposable resources.
+1. **Tool registry:** local repository helpers, file tools (`write_file`, `edit_file`), a `run_tests` tool (pytest), and unrestricted `git_cli`, `azure_cli`, and `shell` tools. The learner's current directory is the default starting directory. These commands run with the learner's OS permissions; only use disposable resources.
 2. **`run_tool_loop()`** with `max_iterations`.
    - Tool errors go back to the model as observations.
    - Each requested call receives one result with its call ID, including errors.
 3. Save this deliberately unrestricted behavior for comparison with Lab 2B.
+4. **Practice app:** learners use `harness ask` in `labs/app/` (created in Lab 0) to build the same pet-store order calculator as the Claude Code track, then find a planted regression using Git history.
 
 **CLI:** `harness ask` starts in the current directory; `--repo PATH` selects another. The Azure CLI tool is registered without an opt-in flag.
 
@@ -683,11 +684,13 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 - Pre-model transcript checks catch malformed history before the provider does.
 
 **Build**
-- A `pre_tool` hook allows only exact `git_cli` reads (`status`, `log -1 --oneline`) and `azure_cli` reads (`account show`, `resource list`); it denies shell and every other CLI request before execution.
-- `pre_model` checks completed call/result batches. Additional hooks can tighten but not remove the built-in command policy.
+- A built-in `pre_tool` policy denies `shell`, destructive or history-rewriting Git subcommands (`rm`, `reset`, `clean`, `push`, `rebase`, `checkout`, `restore`, `apply`, `config`, …) and every Azure CLI request except `account show` and `resource list`. Everyday Git (`status`, `diff`, `add`, `commit`, `switch`, `merge`, `revert`) is allowed.
+- Project hooks are commands declared in the practice app's `.harness/settings.json`. Like Claude Code hooks, they receive the call as JSON on stdin: a `pre_tool` hook that exits with code 2 blocks the call, and a `post_tool` hook that exits with code 2 sends its feedback to the model with the tool result.
+- Scoped rules in `.harness/rules/*.md` are instructions added to a tool result only when the agent touches a matching path.
+- `pre_model` checks completed call/result batches. Project hooks can tighten but not remove the built-in command policy.
 - Emit `Hook: denied ...` at the CLI and return `DENIED: <reason>` as the tool result. No approval UI or OS sandbox is claimed here; approval is introduced in Lab 6.
 
-**Verify:** offline scripted model calls prove allowed reads execute, denied calls do not, both retain their IDs, and bad history fails before the next model call. Compare these observations with Lab 2A. The snapshots are standalone.
+**Verify:** offline scripted model calls prove allowed calls execute, denied calls do not, both retain their IDs, project hooks block and give feedback, rules load only for matching paths, and bad history fails before the next model call. Live, in `labs/app/`: a rule shapes a pricing change, a hook blocks a `catalog.csv` edit, and a test failure reported by a hook comes back to the model. Compare these observations with Lab 2A. The snapshots are standalone.
 
 **Next:** Lab 3 adds durable sessions. Labs 3 onward carry this hooked tool loop forward for `harness ask`. Agent specifications and richer policies remain separate future work.
 

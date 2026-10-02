@@ -11,6 +11,7 @@ kramdown:
   syntax_highlighter: rouge
 
 exclude:
+  - "labs/app"
   - "labs/*/.venv"
   - "labs/*/.pytest_cache"
   - "labs/*/runs"

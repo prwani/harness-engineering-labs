@@ -11,6 +11,10 @@ This repository offers two paths through harness engineering:
   what can be disabled or measured. The separate
   [Codex SDK path](existing-harnesses/codex-sdk/) is reserved for later.
 
+Both paths use the same pet-store practice app, so you can compare your
+harness with an existing one on the same work. See the
+[build-your-own track guide](labs/README.md) for how the labs use `labs/app/`.
+
 Each build-your-own snapshot can be copied or downloaded independently.
 Run its checks from inside its directory with `pytest checks/`. Snapshots
 do not import from one another. Existing-harness CLI exercises are also
@@ -25,8 +29,8 @@ credentials, and no cross-path scored evaluation is provided.
 |---|-----|-------|
 | 0 | [Setup, dual API, and scorecard](labs/lab00-setup) | Entra configuration, dual model adapters, usage ledger, store simulator |
 | 1 | [Bare model call](labs/lab01-bare-call) | Stateless bare call, `StoreHealthReport` envelope, deterministic scorecard grading |
-| 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop) | Tool registry and unrestricted Git, Azure CLI, and shell tools |
-| 2B | [Tool hooks and command policy](labs/lab02b-hooks) | Pre-tool policy, pre-model history validation, paired denials |
+| 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop) | Tool loop with file, test, Git, Azure CLI, and shell tools; build the practice app |
+| 2B | [Tool hooks and command policy](labs/lab02b-hooks) | Built-in policy, project hooks, scoped rules, paired denials |
 | 3 | [History and sessions](labs/lab03-sessions) | JSONL session persistence, resume recovery, history validation |
 | 4 | [Planning and todos](labs/lab04-planning) | Planner and executor modes, harness-owned todos, idempotent writes |
 | 5 | [File memory and access](labs/lab05-file-memory) | Session memory, optimistic concurrency, path scope enforcement |
