@@ -193,6 +193,39 @@ def background_rm(
     typer.echo(f"Removed background agent {name}.")
 
 
+@app.command("route")
+def route(
+    ticket: str,
+    repo: Path = typer.Option(Path("."), "--repo", help="Project directory."),
+    runs: Path = typer.Option(Path(".runs"), "--runs", help="Folder for the route's trace file."),
+) -> None:
+    """Route a support ticket through the classify -> specialist graph."""
+    from harness.cli import learner
+    from harness.cli.interactive import Activity, format_summary
+    from harness.routing import route_ticket
+
+    root = repo.resolve()
+    try:
+        with Activity() as activity:
+            events = learner.activity_events(activity)
+            events.approver = None  # no one to ask: calls that would ask are denied
+            result = route_ticket(
+                learner.create_model_client(), ticket, root,
+                runs_dir=runs if runs.is_absolute() else root / runs,
+                on_route=lambda name, why: activity.echo(f"[classify] route={name} :: {why}"),
+                events=events,
+            )
+    except Exception as error:
+        typer.echo(f"Unable to route ticket: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(f"[{result.route}] tools: {', '.join(result.tools) or 'none (no model call)'}")
+    typer.echo(result.answer)
+    if result.stats is not None:
+        typer.echo(format_summary(result.stats))
+    if result.trace:
+        typer.echo(f"trace={result.trace}")
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

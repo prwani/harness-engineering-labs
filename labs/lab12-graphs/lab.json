@@ -1,8 +1,12 @@
 {
   "number": 12,
   "slug": "graphs",
-  "title": "Graph engineering",
+  "title": "Graphs: routing between specialised agents",
   "capabilities": [
+    "harness route ticket graph",
+    "tool-less JSON classifier",
+    "per-node tool restrictions",
+    "escalation without a model call",
     "typed graph state",
     "conditional routing",
     "idempotent graph nodes",
