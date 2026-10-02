@@ -9,14 +9,26 @@ your endpoint (ending in `/openai/v1`) and deployment. Provide
 `AZURE_OPENAI_API_KEY` from your resource key via a secret manager.
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex. Do not save the key in files.
-Run in a fresh, empty disposable directory (one session at a time):
+**Workspace:** start in `lab03-sessions/` and follow the
+[common preflight](../#workspace-and-preflight); no fixtures are needed.
+Keep the same `CODEX_HOME` and `workspace/` for both commands, one session
+at a time:
+
+```powershell
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json `
+  "Remember this synthetic order queue name: orders-demo. Say only 'noted'."
+Push-Location $workdir
+try {
+  codex exec resume --last --json `
+    "What synthetic queue name did I give you? Do not guess if it is missing."
+} finally { Pop-Location }
+```
 
 ```sh
-workdir="$(mktemp -d)"
 codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json \
   "Remember this synthetic order queue name: orders-demo. Say only 'noted'."
-codex exec resume --last --json \
-  "What synthetic queue name did I give you? Do not guess if it is missing."
+(cd "$workdir" && codex exec resume --last --json \
+  "What synthetic queue name did I give you? Do not guess if it is missing.")
 ```
 
 If your version's resume selection differs, pass the thread ID from the first
@@ -29,3 +41,6 @@ Record thread ID, whether resume worked, token usage if reported and whether
 the provider also persists state. Do not claim the build-your-own guarantee
 of replaying a crash between a tool call and its result: this lab does not
 inject or validate that failure.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward. A workspace
+reset alone does not delete the saved thread in the temporary Codex home.

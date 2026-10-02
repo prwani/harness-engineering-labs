@@ -11,15 +11,27 @@ your endpoint (ending in `/openai/v1`) and deployment. Provide
 `AZURE_OPENAI_API_KEY` through your resource key from a secret manager.
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex; never save the key in files.
-Create a disposable directory containing synthetic data:
+**Workspace:** start in `lab12-graphs/` and follow the
+[common preflight](../#workspace-and-preflight). Create these synthetic files:
+
+```powershell
+'demo-order: Go, port 3000, queue orders-demo' |
+  Set-Content (Join-Path $workdir 'service.txt') -Encoding utf8
+"product,status,total`nbowl,completed,20`nleash,completed,10`nbowl,pending,20" |
+  Set-Content (Join-Path $workdir 'orders.csv') -Encoding utf8
+```
 
 ```sh
-workdir="$(mktemp -d)"
 printf 'demo-order: Go, port 3000, queue orders-demo\n' > "$workdir/service.txt"
 printf 'product,status,total\nbowl,completed,20\nleash,completed,10\nbowl,pending,20\n' > "$workdir/orders.csv"
 ```
 
 Route a **code question** to the retrieval action:
+
+```powershell
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only `
+  "Read service.txt. Which queue does demo-order use? Cite the file."
+```
 
 ```sh
 codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only \
@@ -27,6 +39,11 @@ codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only \
 ```
 
 Route a **data question** to the calculation action:
+
+```powershell
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only `
+  "Using only orders.csv, calculate completed revenue by product in a markdown table. Show the rows included and excluded."
+```
 
 ```sh
 codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only \
@@ -41,3 +58,5 @@ choice, calls, result and why each action was (or was not) needed.
 Do not execute model-generated code on your host for this exercise; an
 ACA-backed secure code-execution graph needs an external orchestrator
 and is not provided by Codex CLI.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward.

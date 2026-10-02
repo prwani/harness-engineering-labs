@@ -10,10 +10,17 @@ your endpoint (ending in `/openai/v1`) and deployment. Set
 `AZURE_OPENAI_API_KEY` from your resource key via a secret manager.
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex; never save the key in files.
-Prepare a fresh disposable workspace:
+**Workspace:** start in `lab07-observability/` and follow the
+[common preflight](../#workspace-and-preflight). Add the synthetic fixture:
+
+```powershell
+'demo-order: Go, port 3000, queue orders-demo' |
+  Set-Content (Join-Path $workdir 'service.txt') -Encoding utf8
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json `
+  "Read service.txt and report the port and queue with a file citation."
+```
 
 ```sh
-workdir="$(mktemp -d)"
 printf 'demo-order: Go, port 3000, queue orders-demo\n' > "$workdir/service.txt"
 ```
 
@@ -30,3 +37,5 @@ Never publish the raw event stream: it may contain prompts, tool results
 and sensitive data. Do not claim cache savings unless the provider reports
 cached tokens for these runs. Mark per-call usage, cost, OTel spans and cache
 counters unavailable if Codex does not expose them in your version.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward.

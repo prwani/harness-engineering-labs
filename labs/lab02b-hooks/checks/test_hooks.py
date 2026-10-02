@@ -3,6 +3,7 @@ import pytest
 from harness.hooks import HookPipeline, ToolDecision, read_command_policy, validate_history
 from harness.models import ScriptedModel, ToolCall, Turn
 from harness.tool_loop import run_tool_loop
+from harness.tools import build_tools
 
 
 def test_demo_policy_allows_exact_reads_and_denies_other_commands():
@@ -47,6 +48,38 @@ def test_denied_call_is_not_executed_and_still_gets_correlated_result():
         {"call_id": "allowed", "output": "status result"},
     ]
     assert "call_ids" not in calls[1]["messages"][-2]
+
+
+def test_git_rm_is_denied_and_disposable_file_remains(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_text("Disposable file")
+    tools, definitions = build_tools(tmp_path)
+
+    class RecordingModel(ScriptedModel):
+        def __init__(self):
+            super().__init__([
+                Turn(text="", tool_calls=[
+                    ToolCall("remove-readme", "git_cli", {"args": ["rm", "README.md"]}),
+                ]),
+                Turn(text="The removal was denied."),
+            ])
+            self.calls = []
+
+        def complete(self, **kwargs):
+            self.calls.append(kwargs)
+            return super().complete(**kwargs)
+
+    model = RecordingModel()
+    result = run_tool_loop(
+        model, "Remove README.md", "system", tools, tool_definitions=definitions
+    )
+
+    assert result.text == "The removal was denied."
+    assert model.calls[1]["messages"][-1]["content"] == [{
+        "call_id": "remove-readme",
+        "output": "DENIED: git_cli permits only status or log -1 --oneline",
+    }]
+    assert readme.read_text() == "Disposable file"
 
 
 def test_extra_hook_can_only_tighten_default_policy():

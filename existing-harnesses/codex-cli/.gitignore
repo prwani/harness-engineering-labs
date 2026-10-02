@@ -4,3 +4,9 @@ config.toml
 .env
 runs/
 *.jsonl
+
+# Track empty workspace folders, not learner data or generated output.
+*/workspace/*
+*/workspace-b/*
+!*/workspace/.gitkeep
+!*/workspace-b/.gitkeep

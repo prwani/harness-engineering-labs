@@ -11,10 +11,19 @@ the endpoint (ending in `/openai/v1`) and deployment. Provide
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex; never save the key in files.
 Check `codex features list` for `multi_agent` before running.
-Create a disposable, read-only workspace containing two independent files:
+**Workspace:** start in `lab09-background-agents/` and follow the
+[common preflight](../#workspace-and-preflight). Add two independent files:
+
+```powershell
+"name: demo-order`nport: 3000`nqueue: orders-demo" |
+  Set-Content (Join-Path $workdir 'order.txt') -Encoding utf8
+"name: demo-makeline`nport: 3001`nconsumes: orders-demo" |
+  Set-Content (Join-Path $workdir 'makeline.txt') -Encoding utf8
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json `
+  "Delegate analysis of order.txt and makeline.txt to separate child agents if supported; await both results and list each service's port and queue with file citations, sorted by service name."
+```
 
 ```sh
-workdir="$(mktemp -d)"
 printf 'name: demo-order\nport: 3000\nqueue: orders-demo\n' > "$workdir/order.txt"
 printf 'name: demo-makeline\nport: 3001\nconsumes: orders-demo\n' > "$workdir/makeline.txt"
 ```
@@ -31,3 +40,6 @@ report the feature unavailable rather than calling a single run parallel.
 No children should write shared files. This exercise does not reproduce
 the build-your-own scheduler, deterministic state merge, background
 response polling or tenant-isolated sandbox lifecycle.
+
+Use a new `codex exec` call, not `resume`, for the no-delegation comparison.
+Follow [reset and cleanup](../#reset-and-cleanup) afterward.

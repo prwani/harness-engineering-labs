@@ -11,11 +11,19 @@ your endpoint (ending in `/openai/v1`) and deployment. Provide
 `AZURE_OPENAI_API_KEY` through your resource key from a secret manager.
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex; never save the key in files.
-Run a fresh Codex session in an empty disposable directory:
+**Workspace:** start in `lab14-comparison/` and follow the
+[common preflight](../#workspace-and-preflight). Leave `workspace/`
+empty except `.gitkeep`; disable inherited project instructions:
+
+```powershell
+codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json `
+  -c project_doc_max_bytes=0 `
+  "Produce a Store Health Report covering service name, language, port, dependencies and catalog issues. Return only supported evidence; do not claim any fixes without a write log."
+```
 
 ```sh
-workdir="$(mktemp -d)"
 codex exec --skip-git-repo-check -C "$workdir" --sandbox read-only --json \
+  -c project_doc_max_bytes=0 \
   "Produce a Store Health Report covering service name, language, port, dependencies and catalog issues. Return only supported evidence; do not claim any fixes without a write log."
 ```
 
@@ -33,3 +41,5 @@ write log (if any), and provider-reported usage where exposed. Mark
 missing metrics **unavailable**, never zero. Report which features were
 built in, configurable, or unavailable; distinguish observed facts
 from claims about equivalent scores.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward.

@@ -1,0 +1,3 @@
+# Local-only Claude Code testing artifacts (not for the remote repo)
+/claude-code.env.ps1
+/.azure-cli/

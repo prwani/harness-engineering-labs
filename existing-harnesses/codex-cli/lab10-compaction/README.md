@@ -10,10 +10,18 @@ your endpoint (ending in `/openai/v1`) and deployment. Set
 `AZURE_OPENAI_API_KEY` from your resource key via a secret manager.
 The [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex; never save the key in files.
-Create a fresh disposable directory containing:
+**Workspace:** start in `lab10-compaction/` and follow the
+[common preflight](../#workspace-and-preflight). Add these synthetic files:
+
+```powershell
+'demo-order uses queue orders-demo' |
+  Set-Content (Join-Path $workdir 'order.txt') -Encoding utf8
+'demo-makeline consumes queue orders-demo' |
+  Set-Content (Join-Path $workdir 'makeline.txt') -Encoding utf8
+codex -C "$workdir" --sandbox read-only
+```
 
 ```sh
-workdir="$(mktemp -d)"
 printf 'demo-order uses queue orders-demo\n' > "$workdir/order.txt"
 printf 'demo-makeline consumes queue orders-demo\n' > "$workdir/makeline.txt"
 ```
@@ -31,3 +39,5 @@ support manual compaction in your version, mark the lab's manual step
 unavailable. Do not claim a specific token threshold, saving percentage or
 cache gain without provider measurements; compaction never removes the
 model's hard context-window limit.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward.

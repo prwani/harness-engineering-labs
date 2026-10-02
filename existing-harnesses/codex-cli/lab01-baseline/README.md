@@ -5,13 +5,10 @@ Codex CLI. It cannot guarantee a bare call: Codex owns the agent loop and
 read-only sandboxing does not disable all tools. Do not compare its results
 as if the two harnesses had identical capabilities.
 
-1. Install Codex CLI and check `codex exec --help`. Prepare an isolated home:
-
-   ```sh
-   export CODEX_HOME="$(mktemp -d)"
-   chmod 700 "$CODEX_HOME"
-   cp config.toml.example "$CODEX_HOME/config.toml"
-   ```
+1. Start in `lab01-baseline/`. Install Codex CLI and check `codex exec --help`.
+   Follow the [common preflight](../#workspace-and-preflight) for your shell
+   to create a private home from **this lab's** config and set `workdir`
+   to the tracked `workspace/`.
 
    Edit the copy to use your GPT Responses deployment and Azure OpenAI
    endpoint ending in `/openai/v1`. Load your own resource API key into
@@ -20,14 +17,21 @@ as if the two harnesses had identical capabilities.
    [Microsoft Foundry guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
    says Entra ID is not currently supported for Codex. Never store the
    key in files or logs. Create
-   a fresh, empty work directory. Do not mount a repository, simulator,
-   MCP servers or skills.
+   no fixtures: `workspace/` must contain only `.gitkeep`. Disable inherited
+   project instructions with the option below. Do not configure a simulator,
+   MCP servers or skills; this directory does not contain store evidence.
 
 2. Run one fresh, noninteractive task with no prior session:
 
+   ```powershell
+   codex exec --skip-git-repo-check --sandbox read-only -C "$workdir" --json `
+     -c project_doc_max_bytes=0 `
+     "Produce a Store Health Report: (a) for each service, what it does, its language, port and dependencies; (b) every catalog issue (missing or weak descriptions, price anomalies, duplicates); (c) remediate the catalog issues. End with a StoreHealthReport JSON object with services, catalog_issues and remediations_claimed arrays. Cite file:line or product ID for each claim. Do not invent evidence or claim to have changed anything you could not access."
+   ```
+
    ```sh
-   workdir="$(mktemp -d)"
    codex exec --skip-git-repo-check --sandbox read-only -C "$workdir" --json \
+     -c project_doc_max_bytes=0 \
      "Produce a Store Health Report: (a) for each service, what it does, its language, port and dependencies; (b) every catalog issue (missing or weak descriptions, price anomalies, duplicates); (c) remediate the catalog issues. End with a StoreHealthReport JSON object with services, catalog_issues and remediations_claimed arrays. Cite file:line or product ID for each claim. Do not invent evidence or claim to have changed anything you could not access."
    ```
 
@@ -41,7 +45,7 @@ as if the two harnesses had identical capabilities.
    whether tools were called, the report, and any usage Codex actually
    exposes. Mark unavailable metrics as unavailable, not zero. This pilot
    does **not** yet include a shared grader or claim a comparable scorecard.
-   End the run, remove the temporary work directory and `CODEX_HOME`, and
+   End the run, follow [cleanup](../#reset-and-cleanup) for the workspace and `CODEX_HOME`, and
    unset `AZURE_OPENAI_API_KEY`.
 
 Next: introduce access to the same source and store simulator as the

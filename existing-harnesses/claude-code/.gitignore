@@ -1,3 +1,12 @@
 *.env
 !.env.example
 .claude/settings.local.json
+
+# Learner-created Foundry setup from Lab 0 — never committed.
+/claude-code.env.ps1
+/claude-code.env.sh
+/.azure-cli/
+
+# The learner's progressively built practice app (its own nested git repo,
+# created in Lab 0 and grown lab by lab) — never committed here.
+/app/

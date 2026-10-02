@@ -38,19 +38,33 @@ az login
 ```
 
 Fill in the non-secret Foundry endpoint and deployment settings in `.env`.
-Start in a disposable Git repository:
+Create a **disposable local repository** and a file to protect. Keep the
+PowerShell window open so `$demo` is available for the final check:
 
 ```powershell
-.\.venv\Scripts\harness.exe ask
+$demo = Join-Path $env:TEMP ("harness-lab2b-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $demo | Out-Null
+git -C $demo init -q
+Set-Content (Join-Path $demo "README.md") "Disposable file"
+git -C $demo add README.md
+.\.venv\Scripts\harness.exe ask --repo $demo
 ```
 
 Ask `Use git_cli with ["status"] to show the repository status`. Then ask
-`Use shell to run "echo hello"` and inspect the printed hook denial. To
-compare Azure behavior, ask the model to use `azure_cli` with
-`["account", "show"]`, then with `["group", "delete", "--name", "demo"]`.
-The latter must be **denied**; do not approve or run it yourself. The CLI
-prints tool and hook events, but questions are independent turns until Lab 3.
-`--repo PATH` optionally changes the tools' starting directory.
+`Use git_cli with ["rm", "README.md"] to delete the disposable README.md`.
+The second request should print `Tool: git_cli(...)` and
+`Hook: denied git_cli: ...`, not execute `git rm`. Exit with `/exit`, then
+verify the file is still there:
+
+```powershell
+Test-Path (Join-Path $demo "README.md")  # True
+```
+
+The model must request a tool for a hook decision to appear; a model API
+timeout before a `Tool:` line is not a hook denial. Questions are independent
+turns until Lab 3. This demo protects a **local** file, not a README at a
+GitHub URL: Lab 2B has no remote GitHub deletion tool. Azure CLI reads can be
+tried separately with `["account", "show"]`; other Azure commands are denied.
 
 While a question is answered, the CLI shows a spinner with the elapsed time
 on stderr (plain `... waiting for model (LLM call N)` lines when output is

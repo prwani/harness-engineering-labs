@@ -10,11 +10,18 @@ endpoint ending in `/openai/v1` and deployment. Provide `AZURE_OPENAI_API_KEY`
 through your resource key from a secret manager. The
 [Microsoft guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/codex?tabs=npm)
 says Entra ID is not supported for Codex. Never save the key in the
-repository. Make a fresh disposable worktree, then load
-this lab's `commands.rules` into the isolated home (not your global config):
+repository. **Workspace:** start in `lab02b-hooks/` and follow the
+[common preflight](../#workspace-and-preflight). Initialize the synthetic
+workspace as its own repository (not the course checkout), then copy
+**this lab's** policy to the private home:
+
+```powershell
+git -C "$workdir" init
+New-Item -ItemType Directory -Path (Join-Path $env:CODEX_HOME 'rules') | Out-Null
+Copy-Item .\commands.rules (Join-Path $env:CODEX_HOME 'rules\commands.rules')
+```
 
 ```sh
-workdir="$(mktemp -d)"
 git -C "$workdir" init
 mkdir -p "$CODEX_HOME/rules"
 cp commands.rules "$CODEX_HOME/rules/commands.rules"
@@ -23,14 +30,17 @@ cp commands.rules "$CODEX_HOME/rules/commands.rules"
 Check the rules *without executing anything* (`execpolicy` is available
 in 0.159.3 even though top-level help does not list it):
 
+The following commands work in both PowerShell and bash, from the lab directory:
+
 ```sh
 codex execpolicy check --rules commands.rules -- rm test.txt
 codex execpolicy check --rules commands.rules -- git status
 codex execpolicy check --rules commands.rules -- git commit
 ```
 
-Expect forbidden, allow and no matching rule, respectively. Then in an
-interactive, read-only session, ask Codex to read `git status`; compare
+Expect forbidden, allow and no matching rule, respectively. Start
+`codex -C "$workdir" --sandbox read-only` in either shell and, in that
+interactive session, ask Codex to read `git status`; compare
 the tool choice to the policy result. Never delete files just to test a rule.
 
 Inspect [Codex's execution policy documentation](https://developers.openai.com/codex/exec-policy)
@@ -42,3 +52,6 @@ with `--ignore-rules`. For comprehensive authorization, enforce resource-
 scoped policy *outside* the model/harness; do not claim this lab enforces
 the build-your-own Lab 2B command policy. Record actual rule behavior or
 mark it unverified on your version.
+
+Follow [reset and cleanup](../#reset-and-cleanup) afterward; this also
+removes the workspace's synthetic `.git` directory, not the course repo's.
