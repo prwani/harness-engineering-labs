@@ -51,6 +51,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
         from harness.project_memory import INIT_PROMPT, describe_memory
         from harness.session import SessionStore
         from harness.tool_loop import LoopStats
+        from harness.agents import describe_agents
         from harness.mcp_client import describe_servers
         from harness.project_skills import describe_skills
         from harness.tracing import describe_context, describe_cost
@@ -82,10 +83,23 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             trace: Path | None = typer.Option(
                 None, "--trace", help="Append every step of each run to this JSONL file."
             ),
+            background: bool = typer.Option(
+                False, "--bg", help="Run the question detached in a new worktree; needs -n NAME."
+            ),
         ) -> None:
             """Ask a question or open the interactive prompt, in a saved session."""
             try:
                 root = repo or Path.cwd()
+                if background:
+                    from harness import background as bg
+
+                    if not question or not name:
+                        raise ValueError("--bg needs -n NAME and a question")
+                    agent = bg.start(root, name, question)
+                    typer.echo(f"Started background agent {agent.name} (pid {agent.pid}) "
+                               f"in {agent.worktree} on branch {agent.branch}.")
+                    typer.echo(f"Check on it with: harness agents, harness logs {agent.name}")
+                    return
                 session = SessionStore(root).open(
                     name=name, continue_latest=continue_latest, resume=resume, fork=fork
                 )
@@ -145,6 +159,7 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     "/context": lambda _: typer.echo(describe_context(chat.meter)),
                     "/skills": lambda _: typer.echo(describe_skills(chat.skills)),
                     "/mcp": lambda _: typer.echo(describe_servers(root, chat.servers)),
+                    "/agents": lambda _: typer.echo(describe_agents(chat.agents)),
                 }
                 for skill_name in chat.skills:
                     # /<skill-name> [extra] loads the skill directly; built-ins win.

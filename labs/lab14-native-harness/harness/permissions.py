@@ -108,6 +108,9 @@ def load_rules(repo: Path) -> list[PermissionRule]:
 def default_decision(tool: str, args: dict[str, Any], *, accept_edits: bool = False) -> Decision:
     if tool in READ_TOOLS:
         return Decision.ALLOW
+    if tool == "run_agent":
+        # Delegating is allowed; each of the agent's own tool calls is checked.
+        return Decision.ALLOW
     if tool in EDIT_TOOLS:
         return Decision.ALLOW if accept_edits else Decision.ASK
     if tool == "git_cli":

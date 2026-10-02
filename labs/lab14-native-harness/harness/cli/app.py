@@ -157,6 +157,42 @@ def skills_list(repo: str = typer.Option(".", "--repo", help="Project directory.
     typer.echo(describe_skills(discover_skills(Path(repo).resolve())))
 
 
+@app.command("agents")
+def background_agents(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """List background agents started with `harness ask --bg`."""
+    from harness.background import describe
+
+    typer.echo(describe(Path(repo)))
+
+
+@app.command("logs")
+def background_logs(name: str, repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Show a background agent's output so far."""
+    from harness.background import load
+
+    agent = load(Path(repo).resolve(), name)
+    log = Path(agent.log)
+    typer.echo(log.read_text(encoding="utf-8") if log.is_file() else "No output yet.")
+    typer.echo(f"Status: {agent.status}. Worktree: {agent.worktree}. Trace: {agent.trace}")
+
+
+@app.command("rm")
+def background_rm(
+    name: str,
+    repo: str = typer.Option(".", "--repo", help="Project directory."),
+    force: bool = typer.Option(False, "--force", help="Also discard uncommitted changes in its worktree."),
+) -> None:
+    """Remove a finished background agent, its worktree and its branch."""
+    from harness.background import remove
+
+    try:
+        remove(Path(repo), name, force=force)
+    except (RuntimeError, ValueError) as error:
+        typer.echo(f"Not removed: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(f"Removed background agent {name}.")
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

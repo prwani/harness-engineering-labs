@@ -13,6 +13,7 @@ from typing import Any
 
 from harness.learner import ask_with_tools
 from harness.models.adapters import ModelClient, Turn
+from harness.agents import AgentDefinition, agent_tool_definition, agents_prompt, discover_agents
 from harness.approval import Decision
 from harness.mcp_client import MCPServer, mcp_tools, start_servers
 from harness.permissions import Approver, PermissionEvent, PermissionRule, Permissions, load_rules
@@ -39,6 +40,15 @@ class Events:
         return {item.name: getattr(self, item.name) for item in fields(self)}
 
 
+def _prefixed(events: Events, agent: str) -> dict[str, Any]:
+    """The parent's events, with each tool name shown as agent:tool."""
+    kwargs = events.as_kwargs()
+    for name in ("on_tool_call", "on_hook_denial", "on_hook_feedback", "approver", "on_permission"):
+        if callback := kwargs.get(name):
+            kwargs[name] = lambda tool, *rest, callback=callback: callback(f"{agent}:{tool}", *rest)
+    return kwargs
+
+
 APPROVED = "The plan is approved. Implement it now and keep the todo list up to date."
 
 
@@ -58,6 +68,8 @@ class Chat:
         self.todos_path = session.path.with_suffix(".todos.json") if session.path else None
         self.todos = load_todos(self.todos_path) if self.todos_path else TodoList()
         self.skills: dict[str, ProjectSkill] = discover_skills(repo)
+        self.agents: dict[str, AgentDefinition] = discover_agents(repo)
+        self.agent_runs = 0
         self.servers: list[MCPServer] = start_servers(repo, on_mcp_error)
 
     def close(self) -> None:
@@ -100,10 +112,15 @@ class Chat:
         # Settings and skills are reread for every question; session approvals are kept.
         self.permissions.rules = load_rules(self.repo)
         self.skills = discover_skills(self.repo)
+        self.agents = discover_agents(self.repo)
         tools, definitions = mcp_tools(self.servers)
+        agent_tools, agent_definitions = dict(tools), list(definitions)
         if self.skills:
             tools["use_skill"], definition = skill_tool(self.skills, self.grant_skill)
             definitions.append(definition)
+        if self.agents:
+            tools["run_agent"] = self._agent_runner(events, agent_tools, agent_definitions)
+            definitions.append(agent_tool_definition(self.agents))
         started, error = perf_counter(), None
         try:
             return ask_with_tools(
@@ -119,7 +136,8 @@ class Chat:
                 permissions=self.permissions,
                 extra_tools=tools,
                 extra_definitions=definitions,
-                extra_prompt=skills_prompt(self.skills),
+                extra_prompt="\n\n".join(part for part in (skills_prompt(self.skills),
+                                                             agents_prompt(self.agents)) if part),
                 **events.as_kwargs(),
             )
         except Exception as caught:
@@ -132,6 +150,32 @@ class Chat:
                     tool_calls=stats.tool_calls, denied=stats.denied_calls,
                     tool_errors=stats.tool_errors, error=error,
                 )
+
+    def _agent_runner(self, events: Events, tools: dict[str, Any],
+                      definitions: list[dict[str, Any]]) -> Callable[[dict[str, Any]], str]:
+        """The run_agent tool: a fresh history, the agent's prompt and tools, shared governance."""
+
+        def run_agent(args: dict[str, Any]) -> str:
+            agent = self.agents.get(str(args.get("agent", "")))
+            if agent is None:
+                raise ValueError(f"unknown agent {args.get('agent')!r}; available: {', '.join(self.agents)}")
+            self.agent_runs += 1
+            path = None
+            if self.session.path:
+                path = (self.session.path.parent / f"{self.session.session_id}.agents"
+                        / f"{self.agent_runs:02d}-{agent.name}.jsonl")
+            child, stats = Session(path=path, name=f"agent:{agent.name}"), LoopStats()
+            turn = ask_with_tools(
+                self.client, str(args.get("task", "")), repo=self.repo, stats=stats,
+                history=child.messages, on_message=child.save if path else None,
+                permissions=self.permissions, extra_tools=tools, extra_definitions=definitions,
+                agent=agent, **_prefixed(events, agent.name),
+            )
+            where = f"; transcript {path}" if path else ""
+            return (f"Agent {agent.name} finished ({stats.model_calls} LLM calls, "
+                    f"{stats.tool_calls} tool calls, {stats.denied_calls} denied{where}):\n{turn.text}")
+
+        return run_agent
 
     def questions(self) -> list[str]:
         return [message["content"] for message in self.session.messages
