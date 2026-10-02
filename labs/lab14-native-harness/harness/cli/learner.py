@@ -40,12 +40,16 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                         def on_hook_denial(name: str, reason: str) -> None:
                             activity.echo(f"Hook: denied {name}: {reason}")
 
+                        def on_hook_feedback(name: str, message: str) -> None:
+                            activity.echo(f"Hook: {name}: {message}")
+
                         turn = ask_with_tools(
                             client,
                             prompt,
                             repo=repo or Path.cwd(),
                             on_tool_call=on_tool_call,
                             on_hook_denial=on_hook_denial,
+                            on_hook_feedback=on_hook_feedback,
                             on_model_call=on_model_call,
                             stats=stats,
                         )

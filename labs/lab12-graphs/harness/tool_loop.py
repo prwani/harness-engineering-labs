@@ -1,4 +1,4 @@
-"""Deterministic first-cut tool loop with exactly one result per call."""
+"""Bounded tool loop with hooks and exactly one result per call."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -6,7 +6,7 @@ from time import perf_counter
 from typing import Any
 
 from harness.ledger import Usage
-from harness.hooks import HookPipeline, read_command_policy, validate_history
+from harness.hooks import HookPipeline, command_policy, validate_history
 from harness.models import Turn
 from harness.models.adapters import ModelClient
 
@@ -41,8 +41,9 @@ def run_tool_loop(
 ) -> Turn:
     messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
     pipeline = HookPipeline(
-        pre_tool=(*(hooks.pre_tool if hooks else ()), read_command_policy),
+        pre_tool=(command_policy, *(hooks.pre_tool if hooks else ())),
         pre_model=(*(hooks.pre_model if hooks else ()), validate_history),
+        post_tool=hooks.post_tool if hooks else (),
     )
     stats = stats if stats is not None else LoopStats()
     total_usage = Usage()
@@ -100,7 +101,7 @@ def run_tool_loop(
                     output = f"ERROR: unknown tool {call.name}"
                     stats.tool_errors += 1
                 else:
-                    output = tool(call.args)
+                    output = pipeline.after_tool(call.name, call.args, tool(call.args))
             except Exception as error:
                 output = f"ERROR: {error}"
                 stats.tool_errors += 1
