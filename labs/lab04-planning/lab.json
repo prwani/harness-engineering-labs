@@ -3,11 +3,12 @@
   "slug": "planning",
   "title": "Planning and todos",
   "capabilities": [
-    "planner and executor modes",
+    "plan mode with no write tools",
+    "human-only mode switch",
     "harness-owned todos",
     "idempotent writes"
   ],
   "live_validation": [
-    "Foundry catalog remediation"
+    "Foundry plan-then-execute feature"
   ]
 }

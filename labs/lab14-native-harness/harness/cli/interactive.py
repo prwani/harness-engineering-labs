@@ -120,7 +120,9 @@ Command = Callable[[str], None]
 
 
 def run_interactive(
-    respond: Callable[[str], None], commands: dict[str, Command] | None = None
+    respond: Callable[[str], None],
+    commands: dict[str, Command] | None = None,
+    prompt: Callable[[], str] | None = None,
 ) -> None:
     """Prompt repeatedly; `respond` answers and renders one question.
 
@@ -132,7 +134,7 @@ def run_interactive(
                + (", /help for commands." if commands else "."))
     while True:
         try:
-            question = input("You> ").strip()
+            question = input(prompt() if prompt else "You> ").strip()
         except EOFError:
             typer.echo("")
             return

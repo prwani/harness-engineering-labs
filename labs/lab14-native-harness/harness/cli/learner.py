@@ -12,11 +12,31 @@ def describe_session(session) -> str:
     return f"Session {session.session_id[:8]}{label}: {len(session.messages)} messages{fork}"
 
 
+def activity_events(activity: Activity):
+    """Show tool calls and hook decisions as permanent lines above the spinner."""
+    from harness.chat import Events
+
+    def on_model_call(number: int) -> None:
+        activity.status(f"waiting for model (LLM call {number})")
+
+    def on_tool_call(name: str, args: dict) -> None:
+        activity.echo(f"Tool: {name}({args})")
+        activity.status(f"running {name}", announce=False)
+
+    return Events(
+        on_tool_call=on_tool_call,
+        on_hook_denial=lambda name, reason: activity.echo(f"Hook: denied {name}: {reason}"),
+        on_hook_feedback=lambda name, message: activity.echo(f"Hook: {name}: {message}"),
+        on_model_call=on_model_call,
+    )
+
+
 def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> None:
     if tools_enabled:
         from pathlib import Path
 
-        from harness.learner import ask_with_tools
+        from harness.chat import APPROVED, Chat
+        from harness.plan_mode import render_todos
         from harness.session import SessionStore
         from harness.tool_loop import LoopStats
 
@@ -38,6 +58,9 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             fork: bool = typer.Option(
                 False, "--fork", help="With -c or -r: continue in a new copy of the session."
             ),
+            plan: bool = typer.Option(
+                False, "--plan", help="Start in plan mode: read-only tools, no edits."
+            ),
         ) -> None:
             """Ask a question or open the interactive prompt, in a saved session."""
             try:
@@ -46,37 +69,15 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     name=name, continue_latest=continue_latest, resume=resume, fork=fork
                 )
                 typer.echo(describe_session(session))
-                client = create_model_client()
+                chat = Chat(create_model_client(), root, session, mode="plan" if plan else "execute")
+                if plan:
+                    typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
 
                 def respond(prompt: str) -> None:
                     stats = LoopStats()
                     with Activity() as activity:
-
-                        def on_model_call(number: int) -> None:
-                            activity.status(f"waiting for model (LLM call {number})")
-
-                        def on_tool_call(name: str, args: dict) -> None:
-                            activity.echo(f"Tool: {name}({args})")
-                            activity.status(f"running {name}", announce=False)
-
-                        def on_hook_denial(name: str, reason: str) -> None:
-                            activity.echo(f"Hook: denied {name}: {reason}")
-
-                        def on_hook_feedback(name: str, message: str) -> None:
-                            activity.echo(f"Hook: {name}: {message}")
-
-                        turn = ask_with_tools(
-                            client,
-                            prompt,
-                            repo=root,
-                            on_tool_call=on_tool_call,
-                            on_hook_denial=on_hook_denial,
-                            on_hook_feedback=on_hook_feedback,
-                            on_model_call=on_model_call,
-                            stats=stats,
-                            history=session.messages,
-                            on_message=session.save,
-                        )
+                        events = activity_events(activity)
+                        turn = chat.ask(prompt, events, stats)
                     render_turn(turn, elapsed=activity.elapsed, stats=stats)
 
                 def show_session(_: str) -> None:
@@ -84,15 +85,32 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     typer.echo(f"File: {session.path}")
 
                 def show_history(_: str) -> None:
-                    questions = [message["content"] for message in session.messages
-                                 if message["role"] == "user" and isinstance(message["content"], str)]
-                    for number, text in enumerate(questions, 1):
+                    for number, text in enumerate(chat.questions(), 1):
                         typer.echo(f"{number}. {text.splitlines()[0][:100]}")
-                    if not questions:
+                    if not chat.questions():
                         typer.echo("No questions yet.")
 
+                def show_todos(_: str) -> None:
+                    typer.echo(render_todos(chat.todos))
+
+                def enter_plan_mode(_: str) -> None:
+                    chat.set_mode("plan")
+                    typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
+
+                def execute(extra: str) -> None:
+                    chat.set_mode("execute")
+                    typer.echo("Execute mode: the plan is approved and write tools are on.")
+                    respond(f"{APPROVED} {extra}".strip())
+
+                commands = {
+                    "/session": show_session, "/history": show_history, "/todos": show_todos,
+                    "/plan": enter_plan_mode, "/execute": execute,
+                }
                 if question is None:
-                    run_interactive(respond, {"/session": show_session, "/history": show_history})
+                    run_interactive(
+                        respond, commands,
+                        prompt=lambda: "You [plan]> " if chat.mode == "plan" else "You> ",
+                    )
                 else:
                     respond(question)
             except Exception as error:

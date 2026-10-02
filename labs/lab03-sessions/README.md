@@ -36,6 +36,8 @@ restored conversation does and doesn't know. The exercise matches the
     with no saved result gets an explicit "interrupted" result, so the
     model checks the current state instead of the call being silently
     dropped or blindly re-run.
+- [`harness/chat.py`](harness/chat.py): `Chat` is one conversation: a
+  session plus what each question runs with. The CLI only renders.
 - [`harness/hooks.py`](harness/hooks.py): `validate_history` now checks a
   conversation of many questions. Every assistant turn with tool calls must
   still be followed by exactly one result per call.
