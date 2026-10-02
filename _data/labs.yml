@@ -17,48 +17,48 @@
 - number: 3
   slug: lab03-sessions
   title: "History and sessions"
-  focus: "JSONL session persistence, resume recovery, history validation"
+  focus: "Named, continued, resumed and forked JSONL sessions; harness sessions"
 - number: 4
   slug: lab04-planning
   title: "Planning and todos"
-  focus: "Planner and executor modes, harness-owned todos, idempotent writes"
+  focus: "Read-only plan mode, write_todos, human /execute switch"
 - number: 5
   slug: lab05-file-memory
   title: "File memory and access"
-  focus: "Session memory, optimistic concurrency, path scope enforcement"
+  focus: "User, project and local HARNESS.md memory; /memory, /init"
 - number: 6
   slug: lab06-approval
   title: "Tool approval and safety gates"
-  focus: "Tool policy gate, standing approvals, write audit log"
+  focus: "Allow, ask and deny permission rules; --accept-edits; harness permissions"
 - number: 7
   slug: lab07-observability
   title: "Observability and prompt caching"
-  focus: "OpenTelemetry event model, usage cost attribution, result redaction, cache boundaries"
+  focus: "JSONL trace events, harness trace timings, tokens, cache and cost"
 - number: 8
   slug: lab08-skills-tools
   title: "Agent skills and tool scaling"
-  focus: "Skill registry, skill approval state, tool discovery metadata, MCP tool namespace"
+  focus: "On-demand SKILL.md skills; stdio MCP servers via harness mcp"
 - number: 9
   slug: lab09-background-agents
-  title: "Background agents and delegation"
-  focus: "Sub-agent task model, parallel fan-out plan, isolated child transcripts"
+  title: "Subagents and background agents"
+  focus: ".harness/agents subagents; harness ask --bg in git worktrees"
 - number: 10
   slug: lab10-compaction
-  title: "Compaction and repository map"
-  focus: "Context compaction policy, summary handoff artifact, repository map metadata"
+  title: "Context and compaction"
+  focus: "/compact, /clear, --compact-at, ranged read_file"
 - number: 11
   slug: lab11-loops
-  title: "Loop engineering"
-  focus: "Retry, validation, polling, and refinement loop contracts"
+  title: "Loops with a stop condition"
+  focus: "stop hooks with bounded retries, --max-iterations"
 - number: 12
   slug: lab12-graphs
-  title: "Graph engineering"
-  focus: "Typed graph state, conditional routing, idempotent graph nodes, human route confirmation"
+  title: "Graphs: routing between specialised agents"
+  focus: "harness route: classifier and tool-restricted specialists"
 - number: 13
   slug: lab13-capstone
-  title: "Planner, generator, evaluator capstone"
-  focus: "Dynamic planner-generator-evaluator graph, separate evaluator, ablation metadata"
+  title: "Capstone: planner, generator, evaluator"
+  focus: "harness pge: plan, human gate, generate, fresh evaluator, revisions"
 - number: 14
   slug: lab14-native-harness
-  title: "Native harness comparison"
-  focus: "Comparison scorecard schema, Claude Code mapping, Copilot CLI mapping"
+  title: "Cross-harness comparison"
+  focus: "Same task in two harnesses; harness trace, harness features"

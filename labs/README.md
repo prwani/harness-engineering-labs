@@ -67,7 +67,18 @@ git clean -fd
 | [1](lab01-bare-call/) | Bare model call | Ask about the app: a bare model can't see it |
 | [2A](lab02-tool-loop/) | Tool loop with file, test, Git and shell tools | Build the app; find a regression with git history |
 | [2B](lab02b-hooks/) | Hooks and scoped rules | Pricing rule; hooks that block catalog edits and run tests |
-| [3](lab03-sessions/)–[14](lab14-native-harness/) | Sessions, planning, memory, approval, observability, skills, subagents, compaction, loops, graphs, capstone, comparison | Practice-app exercises are being added in later phases. Until then, follow each lab's existing steps. `harness ask` in these labs already uses the Lab 2B tools and hooks. |
+| [3](lab03-sessions/) | Sessions: continue, resume, fork | Low-stock threshold across sessions |
+| [4](lab04-planning/) | Plan mode and todos | Plan, approve and build discount codes |
+| [5](lab05-file-memory/) | `HARNESS.md` project memory | Record conventions; add gift wrapping |
+| [6](lab06-approval/) | Permission rules and approval prompts | Generate a price list from a poisoned catalog; ask, allow and deny rules |
+| [7](lab07-observability/) | Trace events and `harness trace` | Trace adding a `stats` command; read cost and timings |
+| [8](lab08-skills-tools/) | Skills and MCP servers | Release-notes skill; synthetic orders MCP server |
+| [9](lab09-background-agents/) | Subagents and background agents | Delegate a review and tests to subagents; coverage report in a background worktree |
+| [10](lab10-compaction/) | Compaction and ranged reads | Investigate a large log; `/compact` and `/clear` |
+| [11](lab11-loops/) | Stop hooks and iteration limits | Bulk discount that must pass a protected spec test |
+| [12](lab12-graphs/) | Routing graph | `harness route` tickets to bug, question or feature specialists |
+| [13](lab13-capstone/) | Planner, generator, evaluator | `harness pge` a feature with a human gate and revisions |
+| [14](lab14-native-harness/) | Cross-harness comparison | Same task in this harness and another; compare traces |
 
 ## Safety
 

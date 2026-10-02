@@ -31,18 +31,18 @@ credentials, and no cross-path scored evaluation is provided.
 | 1 | [Bare model call](labs/lab01-bare-call) | Stateless bare call, `StoreHealthReport` envelope, deterministic scorecard grading |
 | 2A | [Tool loop and unrestricted CLI tools](labs/lab02-tool-loop) | Tool loop with file, test, Git, Azure CLI, and shell tools; build the practice app |
 | 2B | [Tool hooks and command policy](labs/lab02b-hooks) | Built-in policy, project hooks, scoped rules, paired denials |
-| 3 | [History and sessions](labs/lab03-sessions) | JSONL session persistence, resume recovery, history validation |
-| 4 | [Planning and todos](labs/lab04-planning) | Planner and executor modes, harness-owned todos, idempotent writes |
-| 5 | [File memory and access](labs/lab05-file-memory) | Session memory, optimistic concurrency, path scope enforcement |
-| 6 | [Tool approval and safety gates](labs/lab06-approval) | Tool policy gate, standing approvals, write audit log |
-| 7 | [Observability and prompt caching](labs/lab07-observability) | OpenTelemetry event model, usage cost attribution, result redaction, cache boundaries |
-| 8 | [Agent skills and tool scaling](labs/lab08-skills-tools) | Skill registry, skill approval state, tool discovery metadata, MCP tool namespace |
-| 9 | [Background agents and delegation](labs/lab09-background-agents) | Sub-agent task model, parallel fan-out plan, isolated child transcripts |
-| 10 | [Compaction and repository map](labs/lab10-compaction) | Context compaction policy, summary handoff artifact, repository map metadata |
-| 11 | [Loop engineering](labs/lab11-loops) | Retry, validation, polling, and refinement loop contracts |
-| 12 | [Graph engineering](labs/lab12-graphs) | Typed graph state, conditional routing, idempotent graph nodes, human route confirmation |
-| 13 | [Planner, generator, evaluator capstone](labs/lab13-capstone) | Dynamic planner-generator-evaluator graph, separate evaluator, ablation metadata |
-| 14 | [Native harness comparison](labs/lab14-native-harness) | Comparison scorecard schema, Claude Code mapping, Copilot CLI mapping |
+| 3 | [History and sessions](labs/lab03-sessions) | Named, continued, resumed and forked JSONL sessions; `harness sessions` |
+| 4 | [Planning and todos](labs/lab04-planning) | Read-only plan mode, `write_todos`, human `/execute` switch |
+| 5 | [File memory and access](labs/lab05-file-memory) | User, project and local `HARNESS.md` memory; `/memory`, `/init` |
+| 6 | [Tool approval and safety gates](labs/lab06-approval) | Allow, ask and deny permission rules; `--accept-edits`; `harness permissions` |
+| 7 | [Observability and prompt caching](labs/lab07-observability) | JSONL trace events, `harness trace` timings, tokens, cache and cost |
+| 8 | [Agent skills and tool scaling](labs/lab08-skills-tools) | On-demand `SKILL.md` skills; stdio MCP servers via `harness mcp` |
+| 9 | [Subagents and background agents](labs/lab09-background-agents) | `.harness/agents` subagents; `harness ask --bg` in git worktrees |
+| 10 | [Context and compaction](labs/lab10-compaction) | `/compact`, `/clear`, `--compact-at`, ranged `read_file` |
+| 11 | [Loops with a stop condition](labs/lab11-loops) | `stop` hooks with bounded retries, `--max-iterations` |
+| 12 | [Graphs: routing between specialised agents](labs/lab12-graphs) | `harness route`: classifier and tool-restricted specialists |
+| 13 | [Capstone: planner, generator, evaluator](labs/lab13-capstone) | `harness pge`: plan, human gate, generate, fresh evaluator, revisions |
+| 14 | [Cross-harness comparison](labs/lab14-native-harness) | Same task in two harnesses; `harness trace`, `harness features` |
 
 ## Repository map
 
