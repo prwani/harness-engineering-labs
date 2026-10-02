@@ -5,88 +5,164 @@ title: "Lab 8 — Agent skills and tool scaling"
 
 # Lab 8 — Agent skills and tool scaling
 
-## Concept
+This standalone snapshot extends `harness ask` in two ways:
 
-Two different scaling problems, both about keeping context small as
-capability grows: packaging a reusable *behavior* so it doesn't have to be
-inlined every time (skills), and finding the right *tool* among dozens
-without paying to describe all of them every call (tool search).
+- a **skill**: a packaged procedure (`SKILL.md`) that the harness loads
+  only when it's relevant.
+- an **MCP server**: an external process that offers new tools. Here it is
+  a fake order system the app can't otherwise see.
 
-**Key ideas**
-- **Skills vs. tools:** a tool is a function; a skill is a packaged,
-  versioned behavior pattern (instructions + reference material + optional
-  scripts) that an agent spec chooses to mount.
-- **Progressive disclosure:** only a skill's name and description live in
-  the system prompt; `load_skill(name)` pulls in the full body only when
-  needed — the same pattern later powers on-demand tool loading.
-- **Governance has teeth:** a skill must be published, then approved by a
-  reviewer (hash recorded in `skills.lock`), and any edit requires a version
-  bump and re-approval. An unapproved or tampered skill is refused at load
-  time, not just discouraged.
-- **The tool tax is real and measurable.** Mounting ~40 MCP tools inflates
-  every call's token cost and increases wrong-tool selection. Exposing only
-  `search_tools(query)` plus a small core set, with matches loaded on
-  demand, cuts token cost by 5×+ with no accuracy loss — and loaded tools
-  are appended, never reordered, so the Lab 7 cache prefix still survives.
-- This is the other half of the **Lab 2B checkpoint**: one governed,
-  mountable skill in production use.
+The exercise matches the
+[Claude Code Lab 8](../../existing-harnesses/claude-code/lab08-skills-tools/).
 
-This self-contained snapshot starts from Lab 7 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+## What changes
 
-## Added in this lab
+- [`harness/project_skills.py`](harness/project_skills.py):
+  - Skills live in `.harness/skills/<name>/SKILL.md` in the project, or
+    `~/.harness/skills/<name>/SKILL.md` for you alone. Front matter gives
+    the `name`, a `description` and optional `allowed-tools`.
+  - Only each skill's name and description go in the system prompt. The
+    body is loaded on demand: by the model, with the `use_skill` tool, when
+    a task matches the description; or by you, with `/<skill-name>
+    [extra instructions]`.
+  - `allowed-tools` lists permission rules (Lab 6 syntax) that are
+    pre-approved once the skill is in use, so its routine steps run without
+    prompts. They never override a deny or an explicit ask rule, and
+    `/permissions` shows them.
+- [`harness/mcp_client.py`](harness/mcp_client.py):
+  - A minimal MCP client over stdio: start the server, `initialize`,
+    `tools/list`, `tools/call`. Each server tool becomes
+    `mcp__<server>__<tool>`, so it can't collide with a local tool.
+  - MCP tools go through the same hooks, permissions and trace as local
+    tools. A tool the rules don't mention **asks** (Lab 6 default).
+  - `harness mcp add NAME -- COMMAND...` registers a server for **this
+    project only**, in `~/.harness/projects/<project>/mcp.json` (outside
+    the repository, like Claude Code's local scope). `harness mcp list`
+    starts each server and lists its tools; `harness mcp remove NAME`
+    unregisters it.
+- [`orders_mcp.py`](orders_mcp.py) is a ~100-line, dependency-free MCP
+  server with synthetic orders: `list_orders(status)` and
+  `get_order(order_id)`.
+- The CLI: `/skills` and `harness skills` list skills; `/mcp` lists servers
+  and their tools.
 
-- [`harness/skills.py`](harness/skills.py) adds `load_skill()` and
-  `SkillRegistry` for parsing skill files and requiring approval before use.
-- The same module adds `ToolCatalog` for tool discovery and
-  `register_mcp_tools()` / `mcp_namespace()` for namespaced MCP metadata.
+[`harness/skills.py`](harness/skills.py) keeps the earlier in-process
+models of a skill registry with approval state, tool discovery and MCP
+namespacing.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab07-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Register a local tool and an MCP tool, then discover only the store server's
-   tools:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from harness.skills import ToolCatalog, register_mcp_tools
-
-   catalog = ToolCatalog()
-   catalog.register("read_file", "Read a repository file.")
-   register_mcp_tools(catalog, "store", [{"name": "list_products", "description": "List products."}])
-   for tool in catalog.discover(namespace="mcp:store"):
-       print(tool.name, "-", tool.description)
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   The discovered name is namespaced, so it cannot collide with `read_file`.
-3. Run `pytest checks/test_skills.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's skills and tools.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+### Part A: a release-notes skill
 
-## External integrations
+2. Read
+   [`assets/.harness/skills/release-notes/SKILL.md`](assets/.harness/skills/release-notes/SKILL.md),
+   then install and commit it:
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- MCP stdio integration
+   ```bash
+   cp -R ../lab08-skills-tools/assets/. .
+   git add .harness && git commit -m "chore: add release-notes skill"
+   harness skills
+   ```
 
-All live paths must use Entra credentials and must not add API-key configuration.
+3. Invoke it explicitly:
+
+   ```bash
+   harness ask
+   ```
+
+   ```text
+   /release-notes
+   ```
+
+   Then `/exit` and, in a **new** session, invoke it implicitly:
+
+   ```bash
+   harness ask "What changed since tag lab04-done? Write it up as release notes."
+   ```
+
+   **Observe:** in the second run, a `use_skill` tool call picked from the
+   description. Then `git log` runs and `CHANGELOG.md` is written, although
+   a one-shot run has no one to answer a permission prompt: the skill's
+   `allowed-tools` pre-approved `write_file(CHANGELOG.md)`.
+   Commits are grouped by Conventional Commit type (your Lab 5 convention
+   pays off here). Nothing is committed. Review `CHANGELOG.md` and commit it
+   yourself.
+
+### Part B: an MCP server for orders
+
+4. Register the server for this project, with an absolute path:
+
+   ```bash
+   harness mcp add orders -- python "$(cd ../lab08-skills-tools && pwd)/orders_mcp.py"
+   harness mcp list
+   ```
+
+   ```powershell
+   harness mcp add orders -- python (Resolve-Path ..\lab08-skills-tools\orders_mcp.py).Path
+   harness mcp list
+   ```
+
+5. Use it:
+
+   ```bash
+   harness ask -n restock
+   ```
+
+   Type `/mcp` to see the server and its tools, then:
+
+   ```text
+   Using the orders tools, find pending orders that we cannot fulfil with the current stock in catalog.csv. Write RESTOCK.md listing each SKU, quantity needed, stock on hand and shortfall.
+   ```
+
+   **Observe:** tool calls named `mcp__orders__list_orders` /
+   `mcp__orders__get_order`, the permission prompt for each new tool
+   (answer `a` to allow the same call for the session), and how the model
+   joins MCP data with local files. Check `RESTOCK.md` against
+   `catalog.csv` yourself. Did it correctly ignore the large **cancelled**
+   order?
+
+6. Unregister the server so it doesn't follow you into later labs:
+
+   ```bash
+   harness mcp remove orders
+   ```
+
+7. **Record**
+   - How the skill was triggered (slash command vs description match), and
+     which calls its `allowed-tools` let through without a prompt.
+   - The MCP tool names and whether you were asked to approve them.
+   - Anything in `RESTOCK.md` that was wrong.
+
+8. **Checkpoint.** Commit `CHANGELOG.md` and `RESTOCK.md` if you're keeping
+   them, then in `app/`:
+
+   ```bash
+   git tag lab08-done
+   ```
+
+9. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps tracing (Lab 7), permissions (Lab 6), file memory
+(Lab 5), plan mode and todos (Lab 4), sessions (Lab 3) and the Lab 2B
+tools, built-in policy, project hooks and rules. This is a teaching
+harness, not a sandbox: only use it on the practice app.

@@ -51,6 +51,8 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
         from harness.project_memory import INIT_PROMPT, describe_memory
         from harness.session import SessionStore
         from harness.tool_loop import LoopStats
+        from harness.mcp_client import describe_servers
+        from harness.project_skills import describe_skills
         from harness.tracing import describe_context, describe_cost
 
         @app.command("ask")
@@ -90,7 +92,9 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 typer.echo(describe_session(session))
                 chat = Chat(create_model_client(), root, session,
                             mode="plan" if plan else "execute", accept_edits=accept_edits,
-                            trace_path=trace)
+                            trace_path=trace,
+                            on_mcp_error=lambda name, error: typer.echo(
+                                f"MCP server {name} failed to start: {error}", err=True))
                 if plan:
                     typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
 
@@ -139,14 +143,28 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     "/permissions": show_permissions,
                     "/cost": lambda _: typer.echo(describe_cost(chat.meter)),
                     "/context": lambda _: typer.echo(describe_context(chat.meter)),
+                    "/skills": lambda _: typer.echo(describe_skills(chat.skills)),
+                    "/mcp": lambda _: typer.echo(describe_servers(root, chat.servers)),
                 }
-                if question is None:
-                    run_interactive(
-                        respond, commands,
-                        prompt=lambda: "You [plan]> " if chat.mode == "plan" else "You> ",
+                for skill_name in chat.skills:
+                    # /<skill-name> [extra] loads the skill directly; built-ins win.
+                    commands.setdefault(
+                        f"/{skill_name}",
+                        lambda extra, skill_name=skill_name: respond(chat.skill_prompt(skill_name, extra)),
                     )
-                else:
-                    respond(question)
+                try:
+                    if question is None:
+                        run_interactive(
+                            respond, commands,
+                            prompt=lambda: "You [plan]> " if chat.mode == "plan" else "You> ",
+                        )
+                    elif question.startswith("/") and question.split()[0] in commands:
+                        name, _, rest = question.partition(" ")
+                        commands[name](rest.strip())
+                    else:
+                        respond(question)
+                finally:
+                    chat.close()
             except Exception as error:
                 typer.echo(f"Unable to answer question: {error}", err=True)
                 raise typer.Exit(1) from error

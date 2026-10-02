@@ -21,6 +21,7 @@ from harness.todos import Todo, TodoList
 
 PLAN_TOOLS = frozenset({
     "list_files", "read_file", "git_status", "git_log", "git_cli", "run_tests", "write_todos",
+    "use_skill",
 })
 # Git subcommands that only read. `branch` and `tag` only list when given no names.
 READ_ONLY_GIT = frozenset({

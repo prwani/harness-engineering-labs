@@ -13,7 +13,10 @@ from typing import Any
 
 from harness.learner import ask_with_tools
 from harness.models.adapters import ModelClient, Turn
-from harness.permissions import Approver, PermissionEvent, Permissions, load_rules
+from harness.approval import Decision
+from harness.mcp_client import MCPServer, mcp_tools, start_servers
+from harness.permissions import Approver, PermissionEvent, PermissionRule, Permissions, load_rules
+from harness.project_skills import ProjectSkill, discover_skills, skill_text, skill_tool, skills_prompt
 from harness.plan_mode import load_todos, save_todos
 from harness.session import Session
 from harness.todos import TodoList
@@ -42,7 +45,8 @@ APPROVED = "The plan is approved. Implement it now and keep the todo list up to 
 class Chat:
     def __init__(self, client: ModelClient, repo: Path, session: Session,
                  *, mode: str = "execute", accept_edits: bool = False,
-                 trace_path: Path | None = None) -> None:
+                 trace_path: Path | None = None,
+                 on_mcp_error: Callable[[str, Exception], None] | None = None) -> None:
         self.repo, self.session = repo, session
         # Every model call is measured; with a trace path every step is also recorded.
         self.meter = Meter()
@@ -53,6 +57,26 @@ class Chat:
         # Todos are harness state, saved next to the session file.
         self.todos_path = session.path.with_suffix(".todos.json") if session.path else None
         self.todos = load_todos(self.todos_path) if self.todos_path else TodoList()
+        self.skills: dict[str, ProjectSkill] = discover_skills(repo)
+        self.servers: list[MCPServer] = start_servers(repo, on_mcp_error)
+
+    def close(self) -> None:
+        for server in self.servers:
+            server.close()
+
+    def grant_skill(self, skill: ProjectSkill) -> None:
+        """Pre-approve a skill's allowed-tools for the rest of the session."""
+        source = f"skill {skill.name}"
+        if any(rule.source == source for rule in self.permissions.granted):
+            return
+        self.permissions.granted += [PermissionRule.parse(text, Decision.ALLOW, source)
+                                     for text in skill.allowed_tools]
+
+    def skill_prompt(self, name: str, extra: str = "") -> str:
+        """The human invoked /<name>: load the skill directly, no discovery needed."""
+        skill = self.skills[name]
+        self.grant_skill(skill)
+        return f"Use this skill now.\n\n{skill_text(skill)}\n\n{extra}".strip()
 
     def set_mode(self, mode: str) -> None:
         """Only the human (through the CLI) calls this; no tool can."""
@@ -73,8 +97,13 @@ class Chat:
             events = traced_events(events, self.trace)
             on_message = chain(self.session.save, trace_results(self.trace))
             self.trace.write("run_start", question=scrub(question), mode=self.mode, repo=str(self.repo))
-        # Settings are reread for every question; session approvals are kept.
+        # Settings and skills are reread for every question; session approvals are kept.
         self.permissions.rules = load_rules(self.repo)
+        self.skills = discover_skills(self.repo)
+        tools, definitions = mcp_tools(self.servers)
+        if self.skills:
+            tools["use_skill"], definition = skill_tool(self.skills, self.grant_skill)
+            definitions.append(definition)
         started, error = perf_counter(), None
         try:
             return ask_with_tools(
@@ -88,6 +117,9 @@ class Chat:
                 todos=self.todos,
                 on_todos=self._save_todos,
                 permissions=self.permissions,
+                extra_tools=tools,
+                extra_definitions=definitions,
+                extra_prompt=skills_prompt(self.skills),
                 **events.as_kwargs(),
             )
         except Exception as caught:

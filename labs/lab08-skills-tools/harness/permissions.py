@@ -34,7 +34,9 @@ from harness.hooks import ToolDecision
 from harness.plan_mode import READ_ONLY_GIT
 from harness.session import harness_home
 
-READ_TOOLS = frozenset({"list_files", "read_file", "git_status", "git_log", "run_tests", "write_todos"})
+READ_TOOLS = frozenset({
+    "list_files", "read_file", "git_status", "git_log", "run_tests", "write_todos", "use_skill",
+})
 EDIT_TOOLS = frozenset({"write_file", "edit_file"})
 _RULE = re.compile(r"^([A-Za-z0-9_*?\[\]-]+)(?:\((.*)\))?$")
 
@@ -122,6 +124,8 @@ class Permissions:
     rules: list[PermissionRule] = field(default_factory=list)
     accept_edits: bool = False
     session_allowed: set[tuple[str, str]] = field(default_factory=set)
+    # Allow rules granted while running, e.g. a skill's allowed-tools.
+    granted: list[PermissionRule] = field(default_factory=list)
 
     @classmethod
     def load(cls, repo: Path, *, accept_edits: bool = False) -> "Permissions":
@@ -130,7 +134,7 @@ class Permissions:
     def decide(self, tool: str, args: dict[str, Any]) -> tuple[Decision, str]:
         """The decision for one call and why: a rule, a session approval or the default."""
         text = subject(self.repo, tool, args)
-        matching = [rule for rule in self.rules if rule.matches(tool, text)]
+        matching = [rule for rule in (*self.rules, *self.granted) if rule.matches(tool, text)]
         for decision in (Decision.DENY, Decision.ASK):
             for rule in matching:
                 if rule.decision is decision:
@@ -166,6 +170,7 @@ class Permissions:
     def describe(self) -> str:
         """What `/permissions` prints."""
         lines = [f"{rule.decision.value:<5} {rule}  [{rule.source}]" for rule in self.rules]
+        lines += [f"allow {rule}  [{rule.source}]" for rule in self.granted]
         lines += [f"allow {tool}({text})  [this session]" for tool, text in sorted(self.session_allowed)]
         edits = "allow (--accept-edits)" if self.accept_edits else "ask"
         lines.append(f"Defaults: reads and read-only git allow; write_file/edit_file {edits}; "

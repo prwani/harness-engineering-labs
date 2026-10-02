@@ -106,6 +106,57 @@ def trace_summary(
                          output_price if output_price is not None else default_out))
 
 
+mcp_app = typer.Typer(no_args_is_help=True, help="MCP servers for the current project.")
+app.add_typer(mcp_app, name="mcp")
+
+
+@mcp_app.command("add")
+def mcp_add(
+    name: str,
+    command: list[str] = typer.Argument(..., help="Server command, after --."),
+    repo: str = typer.Option(".", "--repo", help="Project directory."),
+) -> None:
+    """Register a stdio MCP server for this project: harness mcp add NAME -- COMMAND..."""
+    from harness.mcp_client import add_server, config_path
+
+    root = Path(repo).resolve()
+    add_server(root, name, command)
+    typer.echo(f"Added MCP server {name} to {config_path(root)}")
+
+
+@mcp_app.command("list")
+def mcp_list(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Start each registered server and list its tools."""
+    from harness.mcp_client import describe_servers, start_servers
+
+    root = Path(repo).resolve()
+    running = start_servers(root, lambda name, error: typer.echo(f"{name}: failed: {error}", err=True))
+    try:
+        typer.echo(describe_servers(root, running))
+    finally:
+        for server in running:
+            server.close()
+
+
+@mcp_app.command("remove")
+def mcp_remove(name: str, repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Unregister an MCP server from this project."""
+    from harness.mcp_client import remove_server
+
+    if not remove_server(Path(repo).resolve(), name):
+        typer.echo(f"No MCP server named {name}.", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Removed MCP server {name}.")
+
+
+@app.command("skills")
+def skills_list(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """List the skills `harness ask` can use in this project."""
+    from harness.project_skills import describe_skills, discover_skills
+
+    typer.echo(describe_skills(discover_skills(Path(repo).resolve())))
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

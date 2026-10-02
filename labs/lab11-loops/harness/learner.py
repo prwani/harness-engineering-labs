@@ -42,6 +42,9 @@ def ask_with_tools(
     permissions: "Permissions | None" = None,
     approver: "Approver | None" = None,
     on_permission: "PermissionEvent | None" = None,
+    extra_tools: dict[str, Any] | None = None,
+    extra_definitions: list[dict[str, Any]] | None = None,
+    extra_prompt: str = "",
 ) -> Turn:
     from harness.hooks import HookPipeline, load_project_hooks
     from harness.plan_mode import PLAN_TOOLS, mode_prompt, plan_mode_policy, todo_tool
@@ -55,6 +58,9 @@ def ask_with_tools(
     if todos is not None:
         tools["write_todos"], definition = todo_tool(todos, on_todos)
         definitions.append(definition)
+    # Skills and MCP servers add tools; they pass the same hooks and permissions.
+    tools.update(extra_tools or {})
+    definitions.extend(extra_definitions or [])
     hooks = load_project_hooks(repo, on_hook_feedback)
     if mode == "plan":
         # Plan mode: write tools are not offered, and the policy denies them anyway.
@@ -65,7 +71,7 @@ def ask_with_tools(
         hooks = HookPipeline((*hooks.pre_tool, permissions.hook(approver, on_permission)),
                              hooks.pre_model, hooks.post_tool)
     # Memory files are read for every question, so edits apply on the next one.
-    sections = (SYSTEM_PROMPT, memory_prompt(load_memory(repo)), mode_prompt(mode, todos))
+    sections = (SYSTEM_PROMPT, memory_prompt(load_memory(repo)), extra_prompt, mode_prompt(mode, todos))
     system = "\n\n".join(part for part in sections if part)
     return run_tool_loop(
         client,
