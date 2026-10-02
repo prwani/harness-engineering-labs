@@ -81,6 +81,19 @@ class Session:
             raise ValueError("session has no file")
         self._write(message, self.path)
 
+    def replace(self, messages: list[dict]) -> None:
+        """Swap the history (after /compact or /clear); the file keeps the old part.
+
+        A ``reset`` entry marks the point where a resumed session starts again.
+        """
+        self.messages[:] = messages
+        if self.path is not None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open("a", encoding="utf-8") as file:
+                file.write(json.dumps({"session_id": self.session_id, "reset": True}) + "\n")
+            for message in messages:
+                self._write(message, self.path)
+
     def _write(self, message: dict, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         entry = {"session_id": self.session_id, "message": to_jsonable(message)}
@@ -95,7 +108,13 @@ class Session:
         session_id = entries[0]["session_id"]
         if any(entry["session_id"] != session_id for entry in entries):
             raise ValueError("session file contains multiple session IDs")
-        return cls(session_id=session_id, messages=[entry["message"] for entry in entries], path=path)
+        messages: list[dict] = []
+        for entry in entries:
+            if entry.get("reset"):
+                messages = []
+            else:
+                messages.append(entry["message"])
+        return cls(session_id=session_id, messages=messages, path=path)
 
 
 @dataclass(frozen=True)
@@ -136,7 +155,7 @@ class SessionStore:
             lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
             title = ""
             for line in lines:
-                message = json.loads(line)["message"]
+                message = json.loads(line).get("message", {})
                 if message.get("role") == "user" and isinstance(message.get("content"), str):
                     title = message["content"].splitlines()[0][:60]
                     break

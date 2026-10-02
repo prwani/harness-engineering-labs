@@ -83,6 +83,10 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             trace: Path | None = typer.Option(
                 None, "--trace", help="Append every step of each run to this JSONL file."
             ),
+            compact_at: int | None = typer.Option(
+                None, "--compact-at", min=1000,
+                help="Compact automatically before a question once a request reaches this many input tokens.",
+            ),
             background: bool = typer.Option(
                 False, "--bg", help="Run the question detached in a new worktree; needs -n NAME."
             ),
@@ -106,13 +110,28 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                 typer.echo(describe_session(session))
                 chat = Chat(create_model_client(), root, session,
                             mode="plan" if plan else "execute", accept_edits=accept_edits,
-                            trace_path=trace,
+                            trace_path=trace, compact_at=compact_at,
                             on_mcp_error=lambda name, error: typer.echo(
                                 f"MCP server {name} failed to start: {error}", err=True))
                 if plan:
                     typer.echo("Plan mode: write tools are off. Type /execute to approve the plan.")
 
+                def compact(instructions: str) -> None:
+                    with Activity() as activity:
+                        activity.status("compacting")
+                        before, after, summary = chat.compact(instructions)
+                    typer.echo(f"Compacted ~{before} tokens of history into a ~{after}-token summary:")
+                    typer.echo(summary)
+
+                def clear(_: str) -> None:
+                    chat.clear()
+                    typer.echo("Conversation cleared; the session continues with an empty history.")
+
                 def respond(prompt: str) -> None:
+                    if chat.needs_compaction():
+                        typer.echo(f"Context reached {chat.meter.last_input_tokens} input tokens "
+                                   f"(--compact-at {chat.compact_at}); compacting first.")
+                        compact("")
                     stats = LoopStats()
                     with Activity() as activity:
                         events = activity_events(activity, root)
@@ -156,7 +175,8 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
                     "/memory": show_memory, "/init": init_memory,
                     "/permissions": show_permissions,
                     "/cost": lambda _: typer.echo(describe_cost(chat.meter)),
-                    "/context": lambda _: typer.echo(describe_context(chat.meter)),
+                    "/context": lambda _: typer.echo(describe_context(chat.meter, session.messages)),
+                    "/compact": compact, "/clear": clear,
                     "/skills": lambda _: typer.echo(describe_skills(chat.skills)),
                     "/mcp": lambda _: typer.echo(describe_servers(root, chat.servers)),
                     "/agents": lambda _: typer.echo(describe_agents(chat.agents)),

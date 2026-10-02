@@ -55,7 +55,7 @@ APPROVED = "The plan is approved. Implement it now and keep the todo list up to 
 class Chat:
     def __init__(self, client: ModelClient, repo: Path, session: Session,
                  *, mode: str = "execute", accept_edits: bool = False,
-                 trace_path: Path | None = None,
+                 trace_path: Path | None = None, compact_at: int | None = None,
                  on_mcp_error: Callable[[str, Exception], None] | None = None) -> None:
         self.repo, self.session = repo, session
         # Every model call is measured; with a trace path every step is also recorded.
@@ -70,6 +70,8 @@ class Chat:
         self.skills: dict[str, ProjectSkill] = discover_skills(repo)
         self.agents: dict[str, AgentDefinition] = discover_agents(repo)
         self.agent_runs = 0
+        # Auto-compact before a question once the last request reached this many input tokens.
+        self.compact_at = compact_at
         self.servers: list[MCPServer] = start_servers(repo, on_mcp_error)
 
     def close(self) -> None:
@@ -95,6 +97,32 @@ class Chat:
         if mode not in {"plan", "execute"}:
             raise ValueError(f"unknown mode: {mode}")
         self.mode = mode
+
+    def compact(self, instructions: str = "") -> tuple[int, int, str]:
+        """Replace the history with a model-written summary; returns tokens before, after, summary."""
+        from harness.compaction import history_tokens, summarize_history, summary_messages
+        from harness.tools import build_tools
+
+        messages = self.session.messages
+        if not messages:
+            raise ValueError("nothing to compact yet")
+        _, definitions = build_tools(self.repo)
+        summary = summarize_history(self.client, messages, definitions, instructions)
+        before = history_tokens(messages)
+        self.session.replace(summary_messages(summary))
+        after = history_tokens(self.session.messages)
+        if self.trace:
+            self.trace.write("compact", tokens_before=before, tokens_after=after,
+                             instructions=scrub(instructions))
+        return before, after, summary
+
+    def clear(self) -> None:
+        """Forget the conversation; files, todos and approvals are unchanged."""
+        self.session.replace([])
+
+    def needs_compaction(self) -> bool:
+        return bool(self.compact_at and self.session.messages
+                    and self.meter.last_input_tokens >= self.compact_at)
 
     def _save_todos(self, todos: TodoList) -> None:
         if self.todos_path:

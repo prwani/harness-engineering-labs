@@ -72,3 +72,50 @@ def build_repo_map(root: Path) -> list[RepoMapEntry]:
         relative = path.relative_to(root).as_posix()
         entries.append(RepoMapEntry(path=relative, kind="dir" if path.is_dir() else "file"))
     return entries
+
+
+# --- /compact in `harness ask` -------------------------------------------------
+
+COMPACT_SYSTEM = (
+    "You summarize a coding-agent conversation so it can continue from the summary "
+    "alone. Do not call tools."
+)
+COMPACT_REQUEST = (
+    "Summarize this conversation so far. The summary replaces the whole conversation: "
+    "anything you leave out is gone. Keep the user's goals and decisions, facts found "
+    "with their evidence (file names, identifiers, values), files changed, and open "
+    "tasks. Drop raw tool output."
+)
+SUMMARY_HEADER = "This conversation was compacted. Summary of everything before this point:"
+SUMMARY_ACK = "Understood. I'll continue from this summary."
+
+
+def compact_request(instructions: str = "") -> str:
+    extra = f"\n\nInstructions from the user for this summary: {instructions}" if instructions else ""
+    return COMPACT_REQUEST + extra
+
+
+def summary_messages(summary: str) -> list[dict[str, Any]]:
+    """The new history: the summary as a user message, acknowledged by the assistant."""
+    return [{"role": "user", "content": f"{SUMMARY_HEADER}\n\n{summary}"},
+            {"role": "assistant", "content": SUMMARY_ACK}]
+
+
+def summarize_history(client: Any, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
+                      instructions: str = "") -> str:
+    """Ask the model for the summary. Tool definitions are still sent because the
+    history contains tool calls, which some providers reject without them."""
+    request = [{key: value for key, value in message.items() if key != "call_ids"}
+               for message in messages]
+    request.append({"role": "user", "content": compact_request(instructions)})
+    turn = client.complete(system=COMPACT_SYSTEM, messages=request, tools=tools)
+    if not turn.text.strip():
+        raise RuntimeError("the model returned no summary; the history is unchanged")
+    return turn.text.strip()
+
+
+def history_tokens(messages: list[dict[str, Any]]) -> int:
+    """About 4 characters per token, counting tool calls and results."""
+    import json
+
+    return sum(len(json.dumps(message.get("content", ""), default=str)) for message in messages) // 4

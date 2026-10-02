@@ -209,11 +209,15 @@ def describe_cost(meter: Meter) -> str:
             f"Cost: {estimate}")
 
 
-def describe_context(meter: Meter) -> str:
+def describe_context(meter: Meter, messages: list[dict[str, Any]] | None = None) -> str:
     """What `/context` prints: what the last request was made of (about 4 characters per token)."""
     request = meter.last_request
+    now = ""
+    if messages is not None:
+        chars = sum(len(json.dumps(m.get("content", ""), default=str)) for m in messages)
+        now = f"\nHistory now: {len(messages)} messages, ~{chars // 4} tokens"
     if not request:
-        return "No model call yet in this process."
+        return "No model call yet in this process." + now
     other = request["message_chars"] - request["tool_result_chars"]
     return "\n".join([
         f"Last request: {meter.last_input_tokens} input tokens reported by the model",
@@ -221,4 +225,4 @@ def describe_context(meter: Meter) -> str:
         f"  tool definitions  ~{request['tools_chars'] // 4} tokens",
         f"  messages          ~{other // 4} tokens in {request['messages']} messages",
         f"  tool results      ~{request['tool_result_chars'] // 4} tokens",
-    ])
+    ]) + now
