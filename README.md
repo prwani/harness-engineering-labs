@@ -23,7 +23,7 @@ credentials, and no cross-path scored evaluation is provided.
 
 📖 Browse the published site: **https://prwani.github.io/harness-engineering-labs/**
 
-## Build-your-own labs
+## Build-your-own Harness labs
 
 | # | Lab | Focus |
 |---|-----|-------|
@@ -43,6 +43,37 @@ credentials, and no cross-path scored evaluation is provided.
 | 12 | [Graphs: routing between specialised agents](labs/lab12-graphs) | `harness route`: classifier and tool-restricted specialists |
 | 13 | [Capstone: planner, generator, evaluator](labs/lab13-capstone) | `harness pge`: plan, human gate, generate, fresh evaluator, revisions |
 | 14 | [Cross-harness comparison](labs/lab14-native-harness) | Same task in two harnesses; `harness trace`, `harness features` |
+
+## Use-an-existing-harness labs
+
+Same capability sequence as the build-your-own labs, run against a vendor
+CLI instead. Each CLI folder is a fully independent track with its own
+setup, config examples and reset scripts — don't mix folders.
+
+| # | [Codex CLI](existing-harnesses/codex-cli) | [Claude Code](existing-harnesses/claude-code) | [GitHub Copilot CLI](existing-harnesses/copilot-cli) |
+|---|---|---|---|
+| 0 | [Setup](existing-harnesses/codex-cli/lab00-setup) | [Setup](existing-harnesses/claude-code/lab00-setup) | [Setup](existing-harnesses/copilot-cli/lab00-setup) |
+| 1 | [Constrained baseline](existing-harnesses/codex-cli/lab01-baseline) | [Constrained baseline](existing-harnesses/claude-code/lab01-baseline) | [Constrained baseline](existing-harnesses/copilot-cli/lab01-baseline) |
+| 2A | [Tool loop](existing-harnesses/codex-cli/lab02-tool-loop) | [Tool loop](existing-harnesses/claude-code/lab02-tool-loop) | [Tool loop](existing-harnesses/copilot-cli/lab02-tool-loop) |
+| 2B | [Hooks and policy](existing-harnesses/codex-cli/lab02b-hooks) | [Hooks and policy](existing-harnesses/claude-code/lab02b-hooks) | [Hooks and policy](existing-harnesses/copilot-cli/lab02b-hooks) |
+| 3 | [Sessions](existing-harnesses/codex-cli/lab03-sessions) | [Sessions](existing-harnesses/claude-code/lab03-sessions) | [Sessions](existing-harnesses/copilot-cli/lab03-sessions) |
+| 4 | [Planning](existing-harnesses/codex-cli/lab04-planning) | [Planning](existing-harnesses/claude-code/lab04-planning) | [Planning](existing-harnesses/copilot-cli/lab04-planning) |
+| 5 | [File memory](existing-harnesses/codex-cli/lab05-file-memory) | [File memory](existing-harnesses/claude-code/lab05-file-memory) | [File memory](existing-harnesses/copilot-cli/lab05-file-memory) |
+| 6 | [Approval](existing-harnesses/codex-cli/lab06-approval) | [Approval](existing-harnesses/claude-code/lab06-approval) | [Approval](existing-harnesses/copilot-cli/lab06-approval) |
+| 7 | [Observability](existing-harnesses/codex-cli/lab07-observability) | [Observability](existing-harnesses/claude-code/lab07-observability) | [Observability](existing-harnesses/copilot-cli/lab07-observability) |
+| 8 | [Skills and MCP](existing-harnesses/codex-cli/lab08-skills-tools) | [Skills and MCP](existing-harnesses/claude-code/lab08-skills-tools) | [Skills and MCP](existing-harnesses/copilot-cli/lab08-skills-tools) |
+| 9 | [Delegation](existing-harnesses/codex-cli/lab09-background-agents) | [Delegation](existing-harnesses/claude-code/lab09-background-agents) | [Delegation](existing-harnesses/copilot-cli/lab09-background-agents) |
+| 10 | [Compaction](existing-harnesses/codex-cli/lab10-compaction) | [Compaction](existing-harnesses/claude-code/lab10-compaction) | [Compaction](existing-harnesses/copilot-cli/lab10-compaction) |
+| 11 | [Loops](existing-harnesses/codex-cli/lab11-loops) | [Loops](existing-harnesses/claude-code/lab11-loops) | [Loops](existing-harnesses/copilot-cli/lab11-loops) |
+| 12 | [Graphs](existing-harnesses/codex-cli/lab12-graphs) | [Graphs](existing-harnesses/claude-code/lab12-graphs) | [Graphs](existing-harnesses/copilot-cli/lab12-graphs) |
+| 13 | [Capstone](existing-harnesses/codex-cli/lab13-capstone) | [Capstone](existing-harnesses/claude-code/lab13-capstone) | [Capstone](existing-harnesses/copilot-cli/lab13-capstone) |
+| 14 | [Comparison](existing-harnesses/codex-cli/lab14-comparison) | [Comparison](existing-harnesses/claude-code/lab14-comparison) | [Comparison](existing-harnesses/copilot-cli/lab14-comparison) |
+
+These are not scored runs comparable to the build-your-own path: vendor
+CLIs own their loop and may expose built-in tools even in read-only mode.
+See each track's own README for its Foundry auth model (key vs. Entra ID)
+and reset/cleanup steps. The [Codex SDK path](existing-harnesses/codex-sdk)
+is reserved for later.
 
 ## Repository map
 
