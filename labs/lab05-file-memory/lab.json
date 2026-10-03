@@ -3,11 +3,13 @@
   "slug": "file-memory",
   "title": "File memory and access",
   "capabilities": [
+    "HARNESS.md file memory",
+    "user, project and local memory scopes",
     "session memory",
     "optimistic concurrency",
     "path scope enforcement"
   ],
   "live_validation": [
-    "Foundry memory reuse evaluation"
+    "Foundry memory-following evaluation"
   ]
 }

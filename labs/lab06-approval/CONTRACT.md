@@ -7,10 +7,19 @@
 
 ## Capability additions
 
-- tool policy gate
-- standing approvals
-- write audit log
+- permission rules `tool` / `tool(glob)` in the `permissions` section of user
+  (`$HARNESS_HOME/settings.json`), project (`.harness/settings.json`) and local
+  (`.harness/settings.local.json`) settings; deny > ask > allow, then defaults
+  (reads allow; edits, non-read-only Git and unknown tools ask)
+- interactive approval (yes / no / always for this session) as the last
+  `pre_tool` check; with no one to answer, ask means deny
+- CLI: `harness ask --accept-edits`, `/permissions`, `harness permissions`
+- [`assets/.harness/settings.json`](assets/.harness/settings.json): the lab's
+  rules plus the Lab 2B hooks
+- in-process models of the policy table, standing approvals and an audit log
+  (`approval.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains Lab 5 file memory, Lab 4 plan mode and todos, Lab 3 sessions
+and the Lab 2B tool loop: file, test, repository and CLI tools run behind the
+built-in command policy, project hooks and rules, and each answer reports elapsed
+time plus LLM/tool call counts.

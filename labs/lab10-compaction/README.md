@@ -1,92 +1,138 @@
 ---
 layout: default
-title: "Lab 10 — Compaction and repository map"
+title: "Lab 10 — Context and compaction"
 ---
 
-# Lab 10 — Compaction and repository map
+# Lab 10 — Context and compaction
 
-## Concept
+Every question resends the whole session, so a long investigation fills
+the context window (Lab 7's `/context` showed how). This standalone
+snapshot lets you act on that in `harness ask`: **compact** the history
+into a model-written summary, optionally steered by your instructions,
+and check which facts survive.
 
-Lab 3 flagged that resending the whole history every turn makes context grow
-without bound; Lab 7's traces made that growth visible as a token curve. This
-lab is where the harness finally *acts* on it: a `pre_model` hook rewrites
-history down to a smaller footprint while preserving what actually matters.
+The exercise matches the
+[Claude Code Lab 10](../../existing-harnesses/claude-code/lab10-compaction/).
+[`make_log.py`](make_log.py) writes a 6,000-line synthetic `app.log` with
+a few important facts buried in noise.
 
-**Key ideas**
-- Compaction is trigger-and-target driven (e.g. compact at 80% of budget
-  down to 35%), not "compact every turn" — using one value for both makes it
-  fire on nearly every turn and is a documented anti-pattern.
-- A **minimum-saving threshold** skips compaction that wouldn't free enough
-  context to be worth invalidating the cache for.
-- **What survives vs. what compresses:** the active plan, todos, task state,
-  files-already-read list, and repo map are kept; raw tool output and
-  resolved exchanges are compressed into a fixed-schema summary (checked
-  against a JSON Schema, so nothing silently disappears).
-- **A tool call and its result are atomic.** Naive tail truncation can orphan
-  one half of a pair and produce a 400 from either provider —
-  `history.validate()` (Lab 2) is what catches this.
-- Compaction **invalidates the cached prefix** after the last stable
-  breakpoint, so it has a real cost too; the context profile changes shape
-  from a ramp (Lab 9's flat per-agent profile) to a sawtooth.
+## What changes
 
-This self-contained snapshot starts from Lab 9 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+- `/compact [instructions]`:
+  - sends the history to the model with a request to summarize it (your
+    instructions are appended), then **replaces** the history with that
+    summary. The CLI prints the summary and the token estimates before
+    and after.
+  - the session file keeps the full record: a `reset` entry marks where
+    the compacted history starts, so `-c`/`-r` resume from the summary.
+- `/clear` empties the history; files, todos and session approvals stay.
+- `harness ask --compact-at TOKENS` compacts automatically **before a
+  question** once the previous request reached that many input tokens. It
+  doesn't compact in the middle of a run.
+- `/context` adds the current history size, so you can see the drop right
+  after compacting.
+- `read_file` takes optional `start_line` and `max_lines` (up to 1000
+  lines per call), so the model can read files over the 100 KB whole-file
+  limit in parts. A whole-file read cut at 20,000 characters now says so.
+- With `--trace`, each compaction is a `compact` event.
 
-## Added in this lab
-
-- [`harness/compaction.py`](harness/compaction.py) adds `CompactionPolicy`,
-  `compact()`, and `SummaryHandoff` to replace older messages with a summary
-  while retaining recent messages.
-- The same module adds `build_repo_map()` for a stable index of files and
-  directories.
+The summary prompt and history rewrite are in
+[`harness/compaction.py`](harness/compaction.py), next to the earlier
+in-process models of a compaction policy, summary handoff and repository
+map.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab09-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Force compaction on a long exchange and inspect what stays in context:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from harness.compaction import CompactionPolicy, compact
-
-   messages = [{"role": "user", "content": "x" * 200},
-               {"role": "assistant", "content": "y" * 200},
-               {"role": "user", "content": "Keep this recent question."}]
-   kept, handoff = compact(CompactionPolicy(token_threshold=10, keep_recent=1), messages)
-   print("Dropped:", handoff.dropped_message_count)
-   print("Summary:", kept[0]["content"])
-   print("Recent message preserved:", kept[-1] == messages[-1])
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   The compacted transcript retains a summary and the most recent message.
-3. Run `pytest checks/test_compaction.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's compaction feature.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+2. Generate the incident log:
 
-## External integrations
+   ```bash
+   python ../lab10-compaction/make_log.py
+   ```
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- long-running Foundry context profile
+   `app.log` is ignored by the app's `*.log` rule. Don't open it yet.
 
-All live paths must use Entra credentials and must not add API-key configuration.
+3. Investigate:
+
+   ```bash
+   harness ask -n incident
+   ```
+
+   ```text
+   Last night checkout failures spiked. Investigate app.log: find the root cause, the deploy involved, the affected order IDs and region, and when it was fixed. Read the whole log and show your evidence.
+   ```
+
+   Then type `/context`.
+
+   **Observe:** the `read_file` calls with `start_line`/`max_lines`, and
+   how much of the request the log takes (tool results).
+
+4. Compact with instructions:
+
+   ```text
+   /compact Keep: root cause, config key and values, deploy id, affected order IDs and region, rollback time, and the fix plan. Drop raw log lines.
+   ```
+
+   Read the printed summary, then type `/context` again. Ask, without
+   letting it re-read the log:
+
+   ```text
+   Without reading any files, answer: what config changed, from what to what, in which deploy, which orders failed, in which region, and when was it rolled back?
+   ```
+
+   **Check against the answer key:** `payment.timeout_ms` changed from
+   `5000` to `500` in deploy `7f3a2c`; orders `ORD-2047`, `ORD-2113`,
+   `ORD-2190` timed out in `eu-west`; then a rollback followed. The
+   "out of stock sku=P3" lines are noise, not the cause.
+
+5. Compare with an unguided compact. `/exit`, start a new session
+   (`harness ask -n incident-plain`), repeat step 3, then use plain
+   `/compact` and ask the same question. Optionally try `/clear` to see
+   what losing everything looks like.
+
+   To see automatic compaction, start one more session with a threshold
+   below the size `/context` reported, for example
+   `harness ask -n incident-auto --compact-at 30000`, investigate, then
+   ask the follow-up question.
+
+6. **Record**
+
+   | | Facts kept (of 6) | `/context` before | after |
+   |---|---|---|---|
+   | `/compact` with instructions | | | |
+   | plain `/compact` | | | |
+
+   Note any hallucinated "facts" after compaction.
+
+7. **Checkpoint.** Nothing to commit (the log is ignored). In `app/`:
+
+   ```bash
+   git tag lab10-done
+   ```
+
+8. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps subagents and background agents (Lab 9), skills and
+MCP (Lab 8), tracing (Lab 7), permissions (Lab 6), file memory (Lab 5),
+plan mode and todos (Lab 4), sessions (Lab 3) and the Lab 2B tools,
+built-in policy, project hooks and rules. This is a teaching harness, not
+a sandbox: only use it on the practice app.

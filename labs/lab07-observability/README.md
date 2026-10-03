@@ -5,93 +5,131 @@ title: "Lab 7 — Observability and prompt caching"
 
 # Lab 7 — Observability and prompt caching
 
-## Concept
+So far each answer ends with a one-line `Summary:`. That tells you *that*
+time and tokens were spent, not *where*. This standalone snapshot turns a
+run into data: `harness ask --trace FILE` writes every step as one JSON
+event per line, and `harness trace FILE` folds the events into a summary,
+the way a log pipeline would. `/cost` and `/context` show the same numbers
+interactively.
 
-Every prior lab has been flying blind on cost and latency. This lab turns
-every model call, tool call, and hook decision into an OpenTelemetry span so
-those questions have real answers — then uses the trace to find and fix the
-two most expensive problems: wasteful reads and repeated failures.
+The exercise matches the
+[Claude Code Lab 7](../../existing-harnesses/claude-code/lab07-observability/).
 
-**Key ideas**
-- **Tracing must not change behavior.** The span tree (`agent.run` →
-  `agent.iteration` → `gen_ai.chat` / `tool.execute`) and cost attribution
-  per task/agent/tool are purely observational — a traced run scores the
-  same as an untraced one.
-- **The trace answers questions the model's own narration can't:** which
-  step was most expensive (usually a full read of a large file), which step
-  fails most often, and why a hook blocked or changed a call — all visible
-  as span events.
-- Input tokens grow roughly linearly per call and the run's total grows
-  quadratically with turns, because the whole history is resent every time.
-  This is the direct motivation for prompt caching in this lab and
-  compaction in Lab 10.
-- Each fix is its own flag, measured independently: tool-result size limits,
-  retry-with-backoff on transient errors, always-on secret redaction, and
-  prompt caching (ordering the prompt stable→volatile so the cache prefix
-  survives).
-- This is half of the **Lab 2B checkpoint**: spans on every step, the worst
-  offenders identified and fixed.
+## What changes
 
-This self-contained snapshot starts from Lab 6 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+- [`harness/tracing.py`](harness/tracing.py):
+  - `MeteredClient` wraps the model client and measures every call
+    (latency, input/output/cached tokens, stop reason, tools requested). It
+    never changes the call.
+  - `TraceWriter` appends events to a JSONL file: `run_start`,
+    `model_call`, `tool_call`, `tool_result` (ok / denied / error and
+    size), `denied` and `hook` (hook decisions), `permission` (every
+    allow/ask/deny decision and why), `run_end` (totals, any error).
+  - Arguments and results are **redacted** (bearer tokens, `api_key`
+    fields, `NAME_KEY=value` assignments) and truncated before they are
+    written. A trace, like a session file, holds prompts and file contents.
+  - `summarize()` is a fold over those events. Cost is an **estimate** from
+    prices you supply in USD per million tokens. It is not your Azure bill;
+    use Azure Cost Management for actual Foundry spend.
+- [`harness/chat.py`](harness/chat.py) records the trace around each
+  question and keeps running totals for `/cost`.
+- The CLI:
+  - `harness ask --trace FILE` appends to `FILE` (one or many runs).
+  - `harness trace FILE [--input-price P --output-price P]` prints the
+    summary. `HARNESS_PRICE_INPUT` and `HARNESS_PRICE_OUTPUT` in the lab's
+    `.env` set default prices.
+  - `/cost` shows LLM calls, tokens and estimated cost for this process.
+  - `/context` shows what the last request was made of: system prompt
+    (including memory files), tool definitions, messages and tool results.
 
-## Added in this lab
-
-- [`harness/telemetry.py`](harness/telemetry.py) adds `Span` and `Tracer` for
-  recording a local span tree and `cost_for()` for usage-based cost estimates.
-- The same module adds `redact()` for sensitive tool-output patterns and
-  `cache_breakpoints()` for estimating stable prompt boundaries.
+[`harness/telemetry.py`](harness/telemetry.py) keeps the earlier
+OpenTelemetry-style span model and the `redact()` the trace uses.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab06-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Create a short trace, estimate usage cost, and inspect redaction:
+1. Install this lab and configure Foundry as before. Optionally add your
+   model's list prices (USD per million tokens) to the lab's `.env`, for
+   example `HARNESS_PRICE_INPUT=3` and `HARNESS_PRICE_OUTPUT=15`:
 
    ```bash
-   python - <<'PY'
-   from harness.ledger import Usage
-   from harness.telemetry import Tracer, cost_for, redact
-
-   tracer = Tracer()
-   run = tracer.start_run("inspect the catalog")
-   run.child("tool.execute", tool="list_products").close()
-   run.close()
-   print([event["name"] for event in tracer.flatten()])
-   print(f"Estimated cost: ${cost_for(Usage(input_tokens=1000, output_tokens=200), 'claude'):.4f}")
-   print(redact('{"Authorization": "******"}'))
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
+   echo ".runs/" >> .gitignore && git commit -am "chore: ignore traces"
    ```
 
-   The output shows the run/tool span tree, a usage-based estimate, and a
-   redacted authorization value.
-3. Run `pytest checks/test_telemetry.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's observability features.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+2. **Capture a run.** A one-shot question with no one to approve edits, so
+   allow edits up front (your Lab 6 rules still apply):
 
-## External integrations
+   ```bash
+   harness ask --accept-edits --trace .runs/lab07.jsonl "Add a 'stats' CLI command that prints product count, total stock units and total inventory value in dollars. Add a test and run the tests. Do not commit."
+   ```
 
-The following integrations require learner-provisioned credentials and resources;
-this snapshot does not include commands to run them:
-- Application Insights traces
-- Foundry prompt cache probe
+3. **Summarize it.**
 
-All live paths must use Entra credentials and must not add API-key configuration.
+   ```bash
+   harness trace .runs/lab07.jsonl
+   ```
+
+   **Observe:** LLM calls and their total time, input/output/cached
+   tokens, tool calls by name, tool results (ok / denied / error), hook
+   events (your Lab 2B `run_tests.py` feedback), permission decisions,
+   duration and the estimated cost. Then open the JSONL and find one
+   `tool_call` and its `tool_result`, and the `model_call` that requested
+   it. The summary is just a fold over these events.
+
+4. **Interactive views.** Continue the session the run created (one-shot
+   runs are sessions too):
+
+   ```bash
+   harness ask -c
+   ```
+
+   ```text
+   How many products have stock below the low-stock threshold?
+   ```
+
+   Then type `/cost` and `/context`. **Observe:** in `/context`, how much of
+   the request is old tool results compared with the system prompt and tool
+   definitions. Compare the input tokens of this question with the first
+   question's in the trace: the whole session is resent each time.
+
+5. **Transcripts on disk.** The session itself is the most complete record:
+
+   ```bash
+   harness sessions
+   ```
+
+   Open the newest `.jsonl` under `~/.harness/projects/`. Treat sessions and
+   traces as sensitive: they contain your prompts, file contents and command
+   output. The trace redacts and truncates; the session keeps everything.
+
+6. **Record:** LLM calls, tool calls by type, hook events, tokens,
+   estimated cost and duration for the step 2 run. Keep this table; Lab 14
+   compares against it.
+
+7. **Checkpoint.** Review and commit the `stats` command if the tests pass
+   (or `git restore .` and delete untracked files), then in `app/`:
+
+   ```bash
+   git tag lab07-done
+   ```
+
+8. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps permissions (Lab 6), file memory (Lab 5), plan mode and
+todos (Lab 4), sessions (Lab 3) and the Lab 2B tools, built-in policy,
+project hooks and rules. This is a teaching harness, not a sandbox: only
+use it on the practice app.

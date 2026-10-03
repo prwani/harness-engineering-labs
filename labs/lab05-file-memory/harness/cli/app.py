@@ -23,6 +23,14 @@ app.add_typer(sim_app, name="sim")
 app.add_typer(memory_app, name="memory")
 
 
+@memory_app.command("files")
+def memory_files(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Show which HARNESS.md memory files `harness ask` loads."""
+    from harness.project_memory import describe_memory
+
+    typer.echo(describe_memory(Path(repo).resolve()))
+
+
 @memory_app.command("ls")
 def memory_ls(root: str = "memory") -> None:
     """List files in session memory."""
@@ -43,6 +51,26 @@ def mode(target: str = typer.Argument(..., help="plan or execute")) -> None:
     switch = ModeSwitch()
     spec = switch.switch(target)
     typer.echo(json.dumps({"mode": switch.mode, "agent": spec.name, "tools": list(spec.tools)}))
+
+
+@app.command()
+def sessions(
+    repo: Path | None = typer.Option(None, "--repo", help="Project whose sessions to list."),
+) -> None:
+    """List this project's saved sessions, most recent first."""
+    from harness.session import SessionStore
+
+    store = SessionStore(repo or Path.cwd())
+    infos = store.list()
+    if not infos:
+        typer.echo(f"No sessions in {store.root}")
+        return
+    typer.echo(f"Sessions in {store.root}")
+    for info in infos:
+        name = info.name or "-"
+        fork = f" (fork of {info.forked_from[:8]})" if info.forked_from else ""
+        typer.echo(f"{info.session_id[:8]}  {name:<20} {info.messages:>4} msgs "
+                   f"{info.size / 1024:>7.1f} KB  {info.title}{fork}")
 
 
 @app.command("lab-info")

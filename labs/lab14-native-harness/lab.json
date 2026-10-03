@@ -1,8 +1,10 @@
 {
   "number": 14,
   "slug": "native-harness",
-  "title": "Native harness comparison",
+  "title": "Cross-harness comparison",
   "capabilities": [
+    "capability-to-command feature map",
+    "traced comparison runs",
     "comparison scorecard schema",
     "Claude Code mapping",
     "Copilot CLI mapping"

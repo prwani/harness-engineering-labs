@@ -1,8 +1,11 @@
 {
   "number": 11,
   "slug": "loops",
-  "title": "Loop engineering",
+  "title": "Loops with a stop condition",
   "capabilities": [
+    "stop hooks",
+    "bounded stop-hook retries",
+    "max iterations per question",
     "retry loop contract",
     "validation loop contract",
     "polling loop contract",

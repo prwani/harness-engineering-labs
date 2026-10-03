@@ -5,86 +5,175 @@ title: "Lab 3 — History and sessions"
 
 # Lab 3 — History and sessions
 
-## Concept
+Until now every question at `You>` was a fresh run: the model forgot the
+previous answer as soon as it was printed. This standalone snapshot gives
+`harness ask` a **session**: the conversation (your questions, the model's
+turns, every tool call and its result) is kept between questions and
+appended to a JSONL file after every step. You can leave, come back and
+**continue**, **resume** a named session, or **fork** it to try an
+alternative without touching the original.
 
-A tool loop (Lab 2) only remembers what happened *within* one run. This lab
-gives the harness durable memory of the run itself: every model call and
-tool result is appended to a session log as it happens, so a run can be
-resumed after a crash instead of restarted from scratch.
+A session is the conversation, **not** a snapshot of your files. In this lab
+you change the repository while the harness isn't looking and see what a
+restored conversation does and doesn't know. The exercise matches the
+[Claude Code Lab 3](../../existing-harnesses/claude-code/lab03-sessions/).
 
-**Key ideas**
-- A `Session` bundles the transcript, the agent spec's hash, and the fixed
-  provider for that run — nothing about a run's identity is allowed to
-  drift mid-session.
-- Persistence happens after *every* step, not at the end, so `harness
-  resume <id>` can continue from the last completed step.
-- Crash recovery has a rule: a read-only tool call with no persisted result
-  is safely re-executed on resume; nothing is silently dropped or duplicated.
-- Printing tokens per call surfaces a problem this lab doesn't yet solve:
-  re-sending the whole history each turn makes context grow with every step.
-  That growth is what Lab 10 (compaction) exists to fix.
-- A resumed run reaches the same final report as an uninterrupted one, using
-  fewer total tokens than starting over — durability is a cost win, not just
-  a safety net.
+## What changes
 
-This self-contained snapshot starts from Lab 2 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
-
-## Added in this lab
-
-- [`harness/session.py`](harness/session.py) adds `Session.append()` for a
-  JSONL-backed message history and `Session.resume()` to reconstruct it while
-  checking that all entries belong to the same session.
+- [`harness/tool_loop.py`](harness/tool_loop.py) accepts the conversation
+  so far (`history`) and appends the new question, each model turn, each
+  tool result and the final answer to it. `on_message` sees every appended
+  message, which is how the session saves it.
+- [`harness/session.py`](harness/session.py):
+  - `SessionStore` keeps a project's sessions under
+    `~/.harness/projects/<project-path>/sessions/` (set `HARNESS_HOME` to
+    move it), outside your repository, like Claude Code's `~/.claude`.
+    Each session is `<id>.jsonl` (one line per message) plus
+    `<id>.meta.json` (name, creation time, the session it was forked from).
+  - `open()` starts a new session or continues the latest, resumes one by
+    ID, ID prefix or name, and optionally forks it into a new copy.
+  - `repair_history()` handles a crash in the middle of a tool call. A call
+    with no saved result gets an explicit "interrupted" result, so the
+    model checks the current state instead of the call being silently
+    dropped or blindly re-run.
+- [`harness/chat.py`](harness/chat.py): `Chat` is one conversation: a
+  session plus what each question runs with. The CLI only renders.
+- [`harness/hooks.py`](harness/hooks.py): `validate_history` now checks a
+  conversation of many questions. Every assistant turn with tool calls must
+  still be followed by exactly one result per call.
+- The CLI:
+  - `harness ask` options `-n/--name NAME`, `-c/--continue`,
+    `-r/--resume ID|NAME` and `--fork`. It prints the session it opened.
+  - `harness sessions` lists the project's sessions (size, message count,
+    first question, fork origin).
+  - At `You>`, `/session` shows the session file and `/history` lists the
+    questions so far.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab02b-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Experience persistence and resume with a small user/assistant exchange:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from pathlib import Path
-   from tempfile import TemporaryDirectory
-   from harness.session import Session
-
-   with TemporaryDirectory() as directory:
-       path = Path(directory) / "session.jsonl"
-       session = Session()
-       session.append({"role": "user", "content": "List the services"}, path)
-       session.append({"role": "assistant", "content": "I found 8 services."}, path)
-       resumed = Session.resume(path)
-       print(resumed.session_id, resumed.messages[-1]["content"])
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   The output shows the same session ID and the last persisted answer.
-3. Run `pytest checks/test_session.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above demonstrates this lab's session persistence.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+2. **Start a named session and investigate.**
 
-## External integrations
+   ```bash
+   harness ask -n low-stock-threshold
+   ```
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- Foundry resumed-session evaluation
+   ```text
+   The low-stock threshold is hardcoded. Investigate how it's used and write NOTES.md with a short plan to make it configurable (CLI flag and/or environment variable). Don't change any code yet.
+   ```
 
-All live paths must use Entra credentials and must not add API-key configuration.
+   Leave with `/exit`, then list the project's sessions:
+
+   ```bash
+   harness sessions
+   ```
+
+   **Observe:** the session file location, its size and message count. Open
+   the `.jsonl` file: every tool call and result is there, including the
+   full text of each file the model read.
+
+3. **Change the repo while the harness isn't looking.** In the same
+   terminal, act as a teammate. The `protect_catalog.py` hook only stops
+   the agent; you can still edit the file:
+
+   ```bash
+   git add NOTES.md && git commit -m "docs: threshold notes"
+   sed -i.bak -E 's/^(P4,[^,]+,[0-9]+),[0-9]+$/\1,2/' catalog.csv && rm catalog.csv.bak
+   git commit -am "chore: restock data from warehouse sync"
+   ```
+
+   ```powershell
+   git add NOTES.md ; git commit -m "docs: threshold notes"
+   (Get-Content catalog.csv) -replace '^(P4,[^,]+,\d+),\d+$', '${1},2' | Set-Content catalog.csv
+   git commit -am "chore: restock data from warehouse sync"
+   ```
+
+4. **Continue the most recent session.**
+
+   ```bash
+   harness ask -c
+   ```
+
+   ```text
+   Continue: implement the plan from NOTES.md, with tests. Before you start, tell me which products are currently low on stock.
+   ```
+
+   **Observe:** the opening line shows the restored message count, and the
+   model remembers the plan without re-reading everything. But does it
+   trust its *memory* of `catalog.csv` (still in the history as an old tool
+   result) or call `read_file` again? Is P4 (stock now 2) in its list? A
+   restored session can hold stale facts about files that changed since.
+   When the feature is done and the tests pass, ask it to commit, then
+   `/exit`.
+
+5. **Resume by name, then fork an alternative.**
+
+   ```bash
+   harness ask -r low-stock-threshold
+   ```
+
+   Type `/history` to see the questions so far, then `/exit`. Now **fork**
+   that conversation, so you can try a different design without adding to
+   the original history:
+
+   ```bash
+   git switch -c try/env-only
+   harness ask -r low-stock-threshold --fork
+   ```
+
+   ```text
+   Alternative design: drop the CLI flag and support only an environment variable LOW_STOCK_THRESHOLD. Implement it, run the tests and commit.
+   ```
+
+   `/exit`, then run `harness sessions`: the original and the fork are
+   separate entries, and the fork says which session it came from. Decide
+   which design you prefer, then switch back and delete the branch you're
+   not keeping:
+
+   ```bash
+   git switch main && git branch -D try/env-only
+   ```
+
+6. **Record**
+   - What `-c` restored, and whether stale file knowledge caused a mistake.
+   - How `-c`, `-r` and `--fork` differ, and what `-n` adds.
+   - Where the session files live and roughly how big they are. They hold
+     your prompts and file contents, so treat them as sensitive.
+
+7. **Checkpoint.** In `app/`:
+
+   ```bash
+   git switch main && python -m pytest -q
+   git tag lab03-done
+   ```
+
+8. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+**Cost note:** each question resends the whole session, including old tool
+results, so input tokens grow with every question. Compare the `Tokens:`
+line of the first and last questions in step 4. Lab 10 (compaction)
+addresses this growth.
+
+`harness ask` keeps the Lab 2B tools, built-in policy, project hooks and
+rules, and ends each answer with the elapsed time and a `Summary:` line.
+`--repo PATH` selects another project; its sessions are stored separately.
+This is a teaching harness, not a sandbox: only use it on the practice app.

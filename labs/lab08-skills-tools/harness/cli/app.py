@@ -31,6 +31,14 @@ def approvals(tool: str, reason: str = typer.Option("", "--reason")) -> None:
     typer.echo(json.dumps({"tool": tool, "decision": decision.decision.value, "reason": decision.reason}))
 
 
+@memory_app.command("files")
+def memory_files(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Show which HARNESS.md memory files `harness ask` loads."""
+    from harness.project_memory import describe_memory
+
+    typer.echo(describe_memory(Path(repo).resolve()))
+
+
 @memory_app.command("ls")
 def memory_ls(root: str = "memory") -> None:
     """List files in session memory."""
@@ -51,6 +59,102 @@ def mode(target: str = typer.Argument(..., help="plan or execute")) -> None:
     switch = ModeSwitch()
     spec = switch.switch(target)
     typer.echo(json.dumps({"mode": switch.mode, "agent": spec.name, "tools": list(spec.tools)}))
+
+
+@app.command()
+def sessions(
+    repo: Path | None = typer.Option(None, "--repo", help="Project whose sessions to list."),
+) -> None:
+    """List this project's saved sessions, most recent first."""
+    from harness.session import SessionStore
+
+    store = SessionStore(repo or Path.cwd())
+    infos = store.list()
+    if not infos:
+        typer.echo(f"No sessions in {store.root}")
+        return
+    typer.echo(f"Sessions in {store.root}")
+    for info in infos:
+        name = info.name or "-"
+        fork = f" (fork of {info.forked_from[:8]})" if info.forked_from else ""
+        typer.echo(f"{info.session_id[:8]}  {name:<20} {info.messages:>4} msgs "
+                   f"{info.size / 1024:>7.1f} KB  {info.title}{fork}")
+
+
+@app.command("permissions")
+def permissions(
+    repo: str = typer.Option(".", "--repo", help="Project directory."),
+    accept_edits: bool = typer.Option(False, "--accept-edits", help="Show the --accept-edits defaults."),
+) -> None:
+    """Show the permission rules `harness ask` applies, and where each came from."""
+    from harness.permissions import Permissions
+
+    typer.echo(Permissions.load(Path(repo).resolve(), accept_edits=accept_edits).describe())
+
+
+@app.command("trace")
+def trace_summary(
+    path: Path = typer.Argument(..., help="JSONL file written by `harness ask --trace`."),
+    input_price: float | None = typer.Option(None, "--input-price", help="USD per 1M input tokens."),
+    output_price: float | None = typer.Option(None, "--output-price", help="USD per 1M output tokens."),
+) -> None:
+    """Summarize a trace: LLM calls, tokens, tools, hooks, permissions, time and cost."""
+    from harness.tracing import prices, summarize
+
+    default_in, default_out = prices()
+    typer.echo(summarize(path, input_price if input_price is not None else default_in,
+                         output_price if output_price is not None else default_out))
+
+
+mcp_app = typer.Typer(no_args_is_help=True, help="MCP servers for the current project.")
+app.add_typer(mcp_app, name="mcp")
+
+
+@mcp_app.command("add")
+def mcp_add(
+    name: str,
+    command: list[str] = typer.Argument(..., help="Server command, after --."),
+    repo: str = typer.Option(".", "--repo", help="Project directory."),
+) -> None:
+    """Register a stdio MCP server for this project: harness mcp add NAME -- COMMAND..."""
+    from harness.mcp_client import add_server, config_path
+
+    root = Path(repo).resolve()
+    add_server(root, name, command)
+    typer.echo(f"Added MCP server {name} to {config_path(root)}")
+
+
+@mcp_app.command("list")
+def mcp_list(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Start each registered server and list its tools."""
+    from harness.mcp_client import describe_servers, start_servers
+
+    root = Path(repo).resolve()
+    running = start_servers(root, lambda name, error: typer.echo(f"{name}: failed: {error}", err=True))
+    try:
+        typer.echo(describe_servers(root, running))
+    finally:
+        for server in running:
+            server.close()
+
+
+@mcp_app.command("remove")
+def mcp_remove(name: str, repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """Unregister an MCP server from this project."""
+    from harness.mcp_client import remove_server
+
+    if not remove_server(Path(repo).resolve(), name):
+        typer.echo(f"No MCP server named {name}.", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Removed MCP server {name}.")
+
+
+@app.command("skills")
+def skills_list(repo: str = typer.Option(".", "--repo", help="Project directory.")) -> None:
+    """List the skills `harness ask` can use in this project."""
+    from harness.project_skills import describe_skills, discover_skills
+
+    typer.echo(describe_skills(discover_skills(Path(repo).resolve())))
 
 
 @app.command("lab-info")

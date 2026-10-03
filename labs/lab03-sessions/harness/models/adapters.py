@@ -112,6 +112,9 @@ class ResponsesAdapter:
         for message in messages:
             if message["role"] == "assistant":
                 raw = message["content"]
+                if isinstance(raw, str):
+                    inputs.append({"role": "assistant", "content": raw})
+                    continue
                 inputs.extend(
                    item.model_dump(exclude_none=True) if hasattr(item, "model_dump") else item
                    for item in raw if isinstance(raw, list)

@@ -19,6 +19,26 @@ sim_app = typer.Typer(no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
 
 
+@app.command()
+def sessions(
+    repo: Path | None = typer.Option(None, "--repo", help="Project whose sessions to list."),
+) -> None:
+    """List this project's saved sessions, most recent first."""
+    from harness.session import SessionStore
+
+    store = SessionStore(repo or Path.cwd())
+    infos = store.list()
+    if not infos:
+        typer.echo(f"No sessions in {store.root}")
+        return
+    typer.echo(f"Sessions in {store.root}")
+    for info in infos:
+        name = info.name or "-"
+        fork = f" (fork of {info.forked_from[:8]})" if info.forked_from else ""
+        typer.echo(f"{info.session_id[:8]}  {name:<20} {info.messages:>4} msgs "
+                   f"{info.size / 1024:>7.1f} KB  {info.title}{fork}")
+
+
 @app.command("lab-info")
 def lab_info() -> None:
     """Show the snapshot's implemented and live-validation scope."""

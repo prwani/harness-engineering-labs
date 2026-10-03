@@ -7,10 +7,15 @@
 
 ## Capability additions
 
-- planner and executor modes
-- harness-owned todos
-- idempotent writes
+- plan mode: write tools are not offered, and a `pre_tool` policy denies write
+  tools and non-read-only Git subcommands
+- harness-owned todos: the `write_todos` tool, an open-todo reminder in every
+  question's system prompt, saved next to the session as `<id>.todos.json`
+- human-only mode switch: `harness ask --plan`, `/plan`, `/execute [instructions]`,
+  `/todos`
+- in-process models of planner/executor specs, todos and idempotent writes
+  (`planning.py`, `todos.py`, `writes.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains the Lab 3 sessions and the Lab 2B tool loop: file, test,
+repository and CLI tools run behind the built-in command policy, project hooks
+and rules, and each answer reports elapsed time plus LLM/tool call counts.

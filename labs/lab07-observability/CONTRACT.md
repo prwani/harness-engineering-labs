@@ -7,11 +7,17 @@
 
 ## Capability additions
 
-- OpenTelemetry event model
-- usage cost attribution
-- result redaction
-- cache boundaries
+- `harness ask --trace FILE`: JSONL events `run_start`, `model_call`, `tool_call`,
+  `tool_result`, `denied`, `hook`, `permission`, `run_end`, with redacted and
+  truncated arguments and results
+- `MeteredClient` measures every model call without changing it
+- `harness trace FILE [--input-price --output-price]` summary, with an estimated
+  cost from user-supplied prices (`HARNESS_PRICE_INPUT`/`HARNESS_PRICE_OUTPUT`)
+- `/cost` and `/context` at the interactive prompt
+- the earlier span model, cost attribution, redaction and cache boundaries
+  (`telemetry.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains Lab 6 permissions, Lab 5 file memory, Lab 4 plan mode and
+todos, Lab 3 sessions and the Lab 2B tool loop: file, test, repository and CLI
+tools run behind the built-in command policy, project hooks and rules, and each
+answer reports elapsed time plus LLM/tool call counts.

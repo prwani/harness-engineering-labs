@@ -7,10 +7,16 @@
 
 ## Capability additions
 
-- JSONL session persistence
-- resume recovery
-- history validation
+- JSONL session persistence: `run_tool_loop(..., history=, on_message=)` appends
+  each question, turn and tool result; `Session.save()` writes each one as it happens
+- `SessionStore` under `$HARNESS_HOME/projects/<project>/sessions/` (default
+  `~/.harness`): create, list, find by ID, prefix or name, continue, resume, fork
+- resume recovery: a tool call without a saved result is paired with an explicit
+  "interrupted" result
+- history validation across many questions in one conversation
+- CLI: `harness ask -n NAME | -c | -r REF [--fork]`, `harness sessions`,
+  `/session` and `/history` at the interactive prompt
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains the Lab 2B tool loop: file, test, repository and CLI tools
+run behind the built-in command policy, project hooks and rules, and each answer
+reports elapsed time plus LLM/tool call counts.

@@ -8,8 +8,20 @@ from harness.bare import run_bare
 from harness.models.adapters import ModelClient, Turn
 
 MAX_ITERATIONS = 30
+SYSTEM_PROMPT = (
+    "You are a coding agent working in the selected working directory. Read files "
+    "before changing them, use write_file and edit_file for edits, run_tests to "
+    "check your work, and git_cli for version control. Hooks enforce policy: shell "
+    "is denied, destructive Git commands are denied, and project hooks may block "
+    "a call or add feedback to its result. A denied call did not run; do not work "
+    "around a denial. Follow any project rule included in a tool result, and do "
+    "not claim success without evidence."
+)
 
 if TYPE_CHECKING:
+    from harness.agents import AgentDefinition
+    from harness.permissions import Approver, PermissionEvent, Permissions
+    from harness.todos import TodoList
     from harness.tool_loop import LoopStats
 
 
@@ -23,28 +35,73 @@ def ask_with_tools(
     on_hook_feedback: Callable[[str, str], None] | None = None,
     on_model_call: Callable[[int], None] | None = None,
     stats: "LoopStats | None" = None,
+    history: list[dict[str, Any]] | None = None,
+    on_message: Callable[[dict[str, Any]], None] | None = None,
+    mode: str = "execute",
+    todos: "TodoList | None" = None,
+    on_todos: Callable[["TodoList"], None] | None = None,
+    permissions: "Permissions | None" = None,
+    approver: "Approver | None" = None,
+    on_permission: "PermissionEvent | None" = None,
+    extra_tools: dict[str, Any] | None = None,
+    extra_definitions: list[dict[str, Any]] | None = None,
+    extra_prompt: str = "",
+    agent: "AgentDefinition | None" = None,
+    max_iterations: int = MAX_ITERATIONS,
 ) -> Turn:
+    from dataclasses import replace
+
     from harness.hooks import load_project_hooks
+    from harness.plan_mode import PLAN_TOOLS, mode_prompt, plan_mode_policy, todo_tool
+    from harness.project_memory import load_memory, memory_prompt
     from harness.tool_loop import run_tool_loop
     from harness.tools import build_tools
 
+    if mode not in {"plan", "execute"}:
+        raise ValueError(f"unknown mode: {mode}")
     tools, definitions = build_tools(repo)
+    if todos is not None:
+        tools["write_todos"], definition = todo_tool(todos, on_todos)
+        definitions.append(definition)
+    # Skills and MCP servers add tools; they pass the same hooks and permissions.
+    tools.update(extra_tools or {})
+    definitions.extend(extra_definitions or [])
+    hooks = load_project_hooks(repo, on_hook_feedback)
+    if agent is not None:
+        # A subagent is offered only its own tools, and the policy denies any other.
+        from harness.agents import agent_tool_policy
+
+        definitions = [item for item in definitions if agent.allows(item["name"])]
+        # Stop hooks gate the main conversation's answer, not a subagent's.
+        hooks = replace(hooks, pre_tool=(agent_tool_policy(agent), *hooks.pre_tool), stop=())
+    if mode == "plan":
+        # Plan mode: write tools are not offered, and the policy denies them anyway.
+        definitions = [item for item in definitions if item["name"] in PLAN_TOOLS]
+        hooks = replace(hooks, pre_tool=(plan_mode_policy, *hooks.pre_tool), stop=())
+    if permissions is not None:
+        # Last pre_tool check, so nobody is asked about a call a hook would deny.
+        hooks = replace(hooks, pre_tool=(*hooks.pre_tool, permissions.hook(approver, on_permission)))
+    # Memory files are read for every question, so edits apply on the next one.
+    if agent is not None:
+        from harness.agents import SUBAGENT_NOTES
+
+        base = f"{agent.prompt}\n\n{SUBAGENT_NOTES}"
+    else:
+        base = SYSTEM_PROMPT
+    sections = (base, memory_prompt(load_memory(repo)), extra_prompt, mode_prompt(mode, todos))
+    system = "\n\n".join(part for part in sections if part)
     return run_tool_loop(
         client,
         question,
-        "You are a coding agent working in the selected working directory. Read files "
-        "before changing them, use write_file and edit_file for edits, run_tests to "
-        "check your work, and git_cli for version control. Hooks enforce policy: shell "
-        "is denied, destructive Git commands are denied, and project hooks may block "
-        "a call or add feedback to its result. A denied call did not run; do not work "
-        "around a denial. Follow any project rule included in a tool result, and do "
-        "not claim success without evidence.",
+        system,
         tools,
         tool_definitions=definitions,
-        max_iterations=MAX_ITERATIONS,
-        hooks=load_project_hooks(repo, on_hook_feedback),
+        max_iterations=max_iterations,
+        hooks=hooks,
         on_tool_call=on_tool_call,
         on_hook_denial=on_hook_denial,
         on_model_call=on_model_call,
         stats=stats,
+        history=history,
+        on_message=on_message,
     )

@@ -1,95 +1,189 @@
 ---
 layout: default
-title: "Lab 9 — Background agents and delegation"
+title: "Lab 9 — Subagents and background agents"
 ---
 
-# Lab 9 — Background agents and delegation
+# Lab 9 — Subagents and background agents
 
-## Concept
+This standalone snapshot teaches `harness ask` to delegate in two ways:
 
-A single agent mapping all 8 services of the sample app runs past its
-context budget — the task simply doesn't fit in one run. This lab splits it:
-an **orchestrator** agent spawns disposable **sub-agent** children, one per
-service, each with its own small context, and merges their results
-deterministically.
+- a **subagent** runs in its own context window, with its own prompt and
+  tool set, and returns only a summary to the main conversation.
+- a **background agent** is a whole `harness ask` run, detached, in its
+  own git worktree, while you keep working.
 
-**Key ideas**
-- Spawning, concurrency caps, timeouts, and result collection are **harness**
-  features; the orchestrator and child specs only say *who* does *what* — a
-  direct instance of the harness/agent split from Lab 2.
-- **Fan-out vs. sequential is a real trade-off, not just "parallel is
-  better":** true dependencies (one service needs another's output first)
-  must stay sequential edges; shared-state writes need the Lab 5 optimistic
-  concurrency check to avoid lost updates; parallel saves wall-clock but not
-  necessarily tokens.
-- The merged result is **deterministic regardless of completion order** —
-  merging by spec order/service name, not arrival order, keeps parallel and
-  sequential runs byte-comparable.
-- **Failure isolation:** one child timing out produces a partial result with
-  a flag, not a failed whole run.
-- **Part B (★, scaling compute):** the same pattern runs on real ACA
-  Sandboxes — one isolated sandbox per child, snapshot/resume checkpointing,
-  per-sandbox egress policy, and multi-tenant isolation, showing the same
-  orchestration idea holding up under real infrastructure constraints.
+The exercise matches the
+[Claude Code Lab 9](../../existing-harnesses/claude-code/lab09-background-agents/).
 
-This self-contained snapshot starts from Lab 8 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+## What changes
 
-## Added in this lab
+- [`harness/agents.py`](harness/agents.py):
+  - Agents live in `.harness/agents/<name>.md` in the project, or
+    `~/.harness/agents/<name>.md` for you alone. Front matter gives the
+    `name`, a `description` and a required `tools` list (exact names or
+    patterns such as `mcp__orders__*`); the body is the agent's system
+    prompt.
+  - The main conversation sees each agent's name and description and a
+    `run_agent(agent, task)` tool. Delegating is allowed by default; the
+    agent's own tool calls are checked as usual.
+- [`harness/chat.py`](harness/chat.py) runs each `run_agent` call as a
+  child:
+  - a fresh history containing only the task, the agent's prompt, and only
+    the tools it lists. A built-in policy denies any other tool.
+  - the same hooks, permissions, MCP tools, model client and trace as the
+    parent. Its tool lines are shown as `agent:tool`.
+  - its own transcript, next to the session file:
+    `~/.harness/projects/<project>/sessions/<id>.agents/NN-<agent>.jsonl`.
+  - The parent receives one tool result: the agent's final answer, with
+    its call counts and transcript path.
+  - Agents can't start other agents, and they run one after another; this
+    harness has no parallel fan-out.
+- [`harness/background.py`](harness/background.py):
+  - `harness ask --bg -n NAME "task"` creates a git worktree at
+    `.harness/worktrees/NAME` on branch `worktree-NAME`, from your last
+    commit, and starts a detached `harness ask` there with
+    `--accept-edits` (there's nobody to answer a prompt) and `--trace`.
+  - `harness agents` lists background agents and their status;
+    `harness logs NAME` shows the output so far.
+  - `harness rm NAME` removes the worktree, the branch and the records. It
+    refuses while the agent is running or if the worktree has uncommitted
+    changes (`--force` discards them).
+- `/agents` lists the available agent definitions.
 
-- [`harness/subagents.py`](harness/subagents.py) adds `SubAgentTask` and
-  `ChildTranscript` for isolated child work, plus `run_sub_agent()` to execute it.
-- The same module adds `FanOutPlan` and `run_fan_out()` to group tasks into
-  concurrency-capped batches.
+[`harness/subagents.py`](harness/subagents.py) keeps the earlier
+in-process model of a sub-agent task plan with isolated child transcripts.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab08-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Split a repository-mapping task across independent child agents:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from harness.subagents import FanOutPlan, make_task, run_fan_out
-
-   plan = FanOutPlan(concurrency_cap=2)
-   for service in ("product", "order", "makeline"):
-       plan.add(make_task(f"Map the {service} service"))
-   results = run_fan_out(plan, lambda task, _transcript: f"Completed: {task.description}")
-   for result in results:
-       print(result.output)
-   print("Batch sizes:", [len(batch) for batch in plan.batches()])
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   Each task gets an isolated transcript, and the three tasks are split into
-   batches that respect the concurrency cap.
-3. Run `pytest checks/test_subagents.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's background agents.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+### Part A: subagents
 
-## External integrations
+2. Read the two agent definitions in
+   [`assets/.harness/agents/`](assets/.harness/agents/):
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- ACA sandbox execution
+   | Agent | Tools | Job |
+   |---|---|---|
+   | `security-reviewer` | `list_files`, `read_file`, `git_status`, `git_log` (read-only) | Find input-validation, secret-handling and money bugs |
+   | `test-writer` | `list_files`, `read_file`, `write_file`, `edit_file`, `run_tests` | Add missing tests; mark real app bugs `xfail` instead of "fixing" them |
 
-All live paths must use Entra credentials and must not add API-key configuration.
+   Install and commit them:
+
+   ```bash
+   cp -R ../lab09-background-agents/assets/. .
+   git add .harness && git commit -m "chore: add review and test subagents"
+   ```
+
+3. Delegate:
+
+   ```bash
+   harness ask -n delegate
+   ```
+
+   Type `/agents`, then:
+
+   ```text
+   Use the security-reviewer agent to review cli.py and pricing.py, and the test-writer agent to add tests for any untested CLI command. Then give me one combined summary.
+   ```
+
+   **Observe:**
+   - two `run_agent` calls, each followed by lines such as
+     `Tool: security-reviewer:read_file(...)`.
+   - your Lab 6 permission prompts (and Lab 2B hooks) still apply to the
+     test-writer's edits.
+   - did the reviewer stay read-only? Any tool outside its list is shown as
+     `Hook: denied security-reviewer:...`.
+   - `/context`: the main conversation holds the two summaries, not the
+     files the agents read. Compare with Lab 7's numbers. Each agent's full
+     transcript is in the `.agents/` folder named in its result.
+
+   `/exit` when done, review the new tests, and commit what you keep.
+
+### Part B: a background agent
+
+4. Commit your work first: the background agent's worktree is created
+   from your last commit, so it won't see uncommitted changes. Keep the
+   worktrees out of git:
+
+   ```bash
+   echo ".harness/worktrees/" >> .gitignore
+   git add .gitignore && git commit -m "chore: ignore agent worktrees"
+   ```
+
+5. Start it:
+
+   ```bash
+   harness ask --bg -n coverage "Measure which functions in this project have no direct test and write COVERAGE.md with a table of function, file and tested yes/no. Do not modify code or commit."
+   harness agents
+   ```
+
+   Keep working in your terminal; check on it with:
+
+   ```bash
+   harness logs coverage
+   ```
+
+   **Observe:** `git worktree list` shows a second checkout under
+   `.harness/worktrees/coverage` on a `worktree-coverage` branch. The agent
+   writes `COVERAGE.md` **there**, not in your `app/` folder. That
+   isolation is what makes it safe to run alongside your own edits.
+
+6. When `harness agents` shows `done`, bring the result over and clean up:
+
+   ```bash
+   cp .harness/worktrees/coverage/COVERAGE.md .
+   rm .harness/worktrees/coverage/COVERAGE.md
+   harness rm coverage
+   ```
+
+   ```powershell
+   Copy-Item .harness\worktrees\coverage\COVERAGE.md .
+   Remove-Item .harness\worktrees\coverage\COVERAGE.md
+   harness rm coverage
+   ```
+
+   Try `harness rm coverage` **before** removing `COVERAGE.md` from the
+   worktree: it refuses, so you don't lose work by accident.
+
+   > Subagents and background agents multiply token cost. Check `/cost`,
+   > or `harness trace` on the background agent's trace file (shown by
+   > `harness logs`), and keep tasks small.
+
+7. **Record**
+   - Which tools each subagent actually used, and any that were denied.
+   - Main-context size after delegation vs Lab 7's `/context` numbers.
+   - Whether the background agent finished, and how you'd know if it
+     hadn't.
+
+8. **Checkpoint.** Commit the useful results (new tests, `COVERAGE.md`),
+   then in `app/`:
+
+   ```bash
+   python -m pytest -q
+   git tag lab09-done
+   ```
+
+9. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps skills and MCP (Lab 8), tracing (Lab 7), permissions
+(Lab 6), file memory (Lab 5), plan mode and todos (Lab 4), sessions (Lab 3)
+and the Lab 2B tools, built-in policy, project hooks and rules. This is a
+teaching harness, not a sandbox: only use it on the practice app.

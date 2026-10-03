@@ -116,18 +116,44 @@ def render_turn(
         typer.echo(format_summary(stats))
 
 
-def run_interactive(respond: Callable[[str], None]) -> None:
-    """Prompt repeatedly; `respond` answers and renders one question."""
-    typer.echo("Interactive harness. Type /exit or /quit to leave.")
+Command = Callable[[str], None]
+
+
+def run_interactive(
+    respond: Callable[[str], None],
+    commands: dict[str, Command] | None = None,
+    prompt: Callable[[], str] | None = None,
+) -> None:
+    """Prompt repeatedly; `respond` answers and renders one question.
+
+    `commands` maps slash commands such as ``/session`` to handlers that get
+    the rest of the line. They are handled by the harness, not sent to the model.
+    """
+    commands = commands or {}
+    typer.echo("Interactive harness. Type /exit or /quit to leave"
+               + (", /help for commands." if commands else "."))
     while True:
         try:
-            question = input("You> ").strip()
+            question = input(prompt() if prompt else "You> ").strip()
         except EOFError:
             typer.echo("")
             return
         if question.lower() in {"/exit", "/quit"}:
             return
         if not question:
+            continue
+        if commands and question.startswith("/"):
+            name, _, rest = question.partition(" ")
+            if name == "/help":
+                typer.echo("Commands: " + ", ".join(sorted([*commands, "/exit"])))
+                continue
+            if name in commands:
+                try:
+                    commands[name](rest.strip())
+                except Exception as error:
+                    typer.echo(f"Unable to run {name}: {error}", err=True)
+                continue
+            typer.echo(f"Unknown command {name}. Type /help for commands.")
             continue
         try:
             respond(question)

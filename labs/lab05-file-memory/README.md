@@ -5,94 +5,162 @@ title: "Lab 5 — File memory and access"
 
 # Lab 5 — File memory and access
 
-## Concept
+Sessions (Lab 3) keep one *conversation*. Conventions your team wants
+followed in *every* conversation ("money is integer cents", "use
+Conventional Commits") need a durable home that is reviewed and versioned
+like code. This standalone snapshot gives `harness ask` **file memory**:
+plain Markdown files named `HARNESS.md`, the equivalent of Claude Code's
+`CLAUDE.md` or Codex's `AGENTS.md`, that the harness adds to the system
+prompt.
 
-Sessions (Lab 3) persist the *conversation*. This lab adds a place for the
-agent to keep durable *artifacts* outside the transcript — notes, snapshots,
-intermediate results — with governance rules for when that memory is shared
-across sessions or agents.
+You generate a starting file, add conventions, and test whether a fresh
+session follows them unprompted and when an edit takes effect. The
+exercise matches the
+[Claude Code Lab 5](../../existing-harnesses/claude-code/lab05-file-memory/).
 
-**Key ideas**
-- Session-scoped `memory/` (notes, snapshots) is on by default; a shared,
-  cross-session store is opt-in per agent spec and can be read-only or
-  read-write.
-- **Optimistic concurrency:** a shared write fails if the file changed since
-  it was read, so two writers can't silently clobber each other.
-- File access is enforced the same way tool access is — a `pre_tool` hook
-  denies any path outside the agent's granted scopes.
-- **Freshness matters as much as persistence.** A cached artifact like
-  `catalog_snapshot.json` is keyed by repo SHA and simulator state version;
-  if the underlying state changed, the harness marks it stale rather than
-  quietly reusing it.
-- Net effect: a second run against unchanged state reuses the snapshot and
-  makes fewer tool calls, but a state change (e.g. a price update) is
-  detected and triggers a fresh read.
-- What memory still *can't* do: keep irreversible writes safe (Lab 6), show
-  where time and cost went (Lab 7), parallelize work (Lab 9), or stop context
-  from growing (Lab 10).
+## What changes
 
-This self-contained snapshot starts from Lab 4 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+- [`harness/project_memory.py`](harness/project_memory.py) reads up to
+  three files, broadest first, so a later file can refine an earlier one:
 
-## Added in this lab
+  | Scope | File | Shared? |
+  |---|---|---|
+  | user | `~/.harness/HARNESS.md` (`$HARNESS_HOME`) | only you, every project |
+  | project | `HARNESS.md` in the project | the team, via git |
+  | local | `HARNESS.local.md` in the project | only you; gitignore it |
 
-- [`harness/memory.py`](harness/memory.py) adds `SessionMemory` for local files
-  and `SharedStore` for opt-in, version-checked shared writes.
-- The same module adds `FileScope.check()` for path authorization and
-  `snapshot_key()` / `CachedArtifact.is_stale()` for freshness checks.
-- [`harness/cli/app.py`](harness/cli/app.py) adds `memory_ls()` and
-  `memory_show()` to inspect session-memory files.
+  Each file is capped at 20,000 characters (truncation is marked), because
+  every line is sent with every model call.
+- [`harness/learner.py`](harness/learner.py) adds the memory to the system
+  prompt **for every question**, so an edit applies to the next question in
+  the same session. (Many harnesses read memory once at session start
+  instead; step 4 compares.)
+- The CLI:
+  - `/memory` at the prompt, or `harness memory files`, lists the three
+    locations and which are loaded.
+  - `/init [extra instructions]` asks the model to explore the project and
+    write a starting `HARNESS.md`.
+
+Memory is guidance for the model, not enforcement. A rule that must always
+hold belongs in a hook (Lab 2B), like `protect_catalog.py`.
+[`harness/memory.py`](harness/memory.py) keeps the earlier in-process
+models of session memory, shared-store concurrency and path scopes.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab04-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Save and retrieve a session note without leaving files in the lab directory:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from pathlib import Path
-   from tempfile import TemporaryDirectory
-   from harness.memory import SessionMemory, snapshot_key, CachedArtifact
-
-   with TemporaryDirectory() as directory:
-       memory = SessionMemory(Path(directory))
-       memory.write("notes.md", "The catalog has 8 products.")
-       print(memory.read("notes.md"))
-   old = snapshot_key("repo-a", "state-1", "inspect catalog")
-   new = snapshot_key("repo-a", "state-2", "inspect catalog")
-   print("Cached result stale after state change:", CachedArtifact(old, "snapshot").is_stale(new))
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   The note is session-local, and changing simulator state invalidates the
-   cached result.
-3. Run `pytest checks/test_memory.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's file-memory feature.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+2. **Generate a starting HARNESS.md.**
 
-## External integrations
+   ```bash
+   harness ask
+   ```
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- Foundry memory reuse evaluation
+   ```text
+   /init
+   ```
 
-All live paths must use Entra credentials and must not add API-key configuration.
+   **Observe:** the model reads the project and writes `HARNESS.md`
+   (install and test commands, modules). `/exit`, then read it. Is anything
+   wrong or invented?
+
+3. **Add your team's conventions.** Open `HARNESS.md` in your editor and
+   add a short section. Every line costs context in every model call:
+
+   ```markdown
+   ## Conventions
+   - Money is always integer cents. Never use float for prices or totals.
+   - Run `python -m pytest -q` and see it pass before saying a task is done.
+   - Commit messages follow Conventional Commits (feat:, fix:, docs:, chore:, test:).
+   - Never edit catalog.csv; catalog changes come from the warehouse sync.
+   ```
+
+   ```bash
+   git add HARNESS.md && git commit -m "docs: add HARNESS.md"
+   ```
+
+4. **Fresh session: is the memory followed?** Start a **new** session
+   (not `-c`):
+
+   ```bash
+   harness ask -n gift-wrap
+   ```
+
+   ```text
+   Add an optional gift-wrap fee of 299 cents per order, as a --gift-wrap flag on the total command. Commit when done.
+   ```
+
+   **Observe, without reminding it:** integer cents? Tests run before
+   "done"? A `feat:` commit message? Type `/memory` to see which files are
+   loaded.
+
+5. **Edit memory mid-session.** Without leaving, add a line to `HARNESS.md`
+   in your editor:
+
+   ```markdown
+   - Every public function has a one-line docstring.
+   ```
+
+   Then ask in the same session:
+
+   ```text
+   Add a function that returns the most expensive product in the catalog.
+   ```
+
+   **Observe:** the new rule applies straight away, because this harness
+   rereads memory for every question. The trade-off: a system prompt that
+   changes between calls can't reuse a provider's prompt cache. In Claude
+   Code the same experiment may need a fresh session; compare if you did
+   that track.
+
+6. **Personal vs project memory.** For notes only you want, create
+   `HARNESS.local.md` and gitignore it, or use `~/.harness/HARNESS.md` for
+   every project:
+
+   ```bash
+   echo "HARNESS.local.md" >> .gitignore
+   echo "- Explain your plan in one sentence before editing." > HARNESS.local.md
+   git add .gitignore && git commit -m "chore: ignore personal harness memory"
+   harness memory files
+   ```
+
+   Don't put secrets in any memory file: they are sent to the model with
+   every call.
+
+7. **Record**
+   - Which conventions were followed unprompted, and which weren't.
+   - Whether a mid-session edit took effect, and the cost of rereading.
+   - One thing that belongs in a hook rather than in memory, and why.
+     (`protect_catalog.py` already enforces the catalog rule; what does
+     the memory line add?)
+
+8. **Checkpoint.** In `app/`:
+
+   ```bash
+   python -m pytest -q && git status
+   git tag lab05-done
+   ```
+
+9. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps plan mode and todos (Lab 4), sessions (Lab 3) and the
+Lab 2B tools, built-in policy, project hooks and rules. This is a teaching
+harness, not a sandbox: only use it on the practice app.

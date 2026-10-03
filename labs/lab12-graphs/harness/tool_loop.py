@@ -12,6 +12,7 @@ from harness.models.adapters import ModelClient
 
 
 Tool = Callable[[dict[str, Any]], str]
+MAX_STOP_BLOCKS = 3
 
 
 @dataclass
@@ -24,6 +25,7 @@ class LoopStats:
     tool_errors: int = 0
     model_seconds: float = 0.0
     tool_seconds: float = 0.0
+    stop_blocks: int = 0
 
 
 def run_tool_loop(
@@ -38,13 +40,31 @@ def run_tool_loop(
     on_hook_denial: Callable[[str, str], None] | None = None,
     on_model_call: Callable[[int], None] | None = None,
     stats: LoopStats | None = None,
+    history: list[dict[str, Any]] | None = None,
+    on_message: Callable[[dict[str, Any]], None] | None = None,
+    max_stop_blocks: int = MAX_STOP_BLOCKS,
 ) -> Turn:
-    messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
+    """Run one question to completion.
+
+    ``history`` is the conversation so far; the loop appends this question and
+    every turn to it, so a session carries over to the next question.
+    ``on_message`` sees each appended message, for example to persist it.
+    """
+    messages: list[dict[str, Any]] = history if history is not None else []
+
+    def append(message: dict[str, Any]) -> None:
+        messages.append(message)
+        if on_message:
+            on_message(message)
+
+    append({"role": "user", "content": task})
     pipeline = HookPipeline(
         pre_tool=(command_policy, *(hooks.pre_tool if hooks else ())),
         pre_model=(*(hooks.pre_model if hooks else ()), validate_history),
         post_tool=hooks.post_tool if hooks else (),
+        stop=hooks.stop if hooks else (),
     )
+    blocks = 0
     stats = stats if stats is not None else LoopStats()
     total_usage = Usage()
     for _ in range(max_iterations):
@@ -69,6 +89,14 @@ def run_tool_loop(
             cache_write_tokens=total_usage.cache_write_tokens + turn.usage.cache_write_tokens,
         )
         if not turn.tool_calls:
+            append({"role": "assistant", "content": turn.raw or turn.text or "(no text)"})
+            # Stop hooks decide whether the answer ends the run; the loop bounds them.
+            if blocks < max_stop_blocks and (feedback := pipeline.on_stop(turn.text, blocks > 0)):
+                blocks += 1
+                stats.stop_blocks += 1
+                append({"role": "user", "content": (
+                    f"You are not done (stop hook, attempt {blocks}/{max_stop_blocks}).\n{feedback}")})
+                continue
             return Turn(
                 turn.text,
                 turn.tool_calls,
@@ -79,7 +107,7 @@ def run_tool_loop(
         call_ids = [call.id for call in turn.tool_calls]
         if not all(call_ids) or len(call_ids) != len(set(call_ids)):
             raise ValueError("Tool call IDs must be nonempty and unique per turn.")
-        messages.append({
+        append({
             "role": "assistant",
             "content": turn.raw or turn.text,
             "call_ids": call_ids,
@@ -107,5 +135,5 @@ def run_tool_loop(
                 stats.tool_errors += 1
             stats.tool_seconds += perf_counter() - started
             results.append({"call_id": call.id, "output": output})
-        messages.append({"role": "tool", "content": results})
+        append({"role": "tool", "content": results})
     raise RuntimeError("tool loop reached max_iterations")

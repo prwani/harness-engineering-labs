@@ -103,3 +103,35 @@ def render_comparison(scorecard: ComparisonScorecard) -> list[dict[str, Any]]:
         }
         for entry in sorted(scorecard.entries.values(), key=lambda e: e.harness_tag)
     ]
+
+
+# What this course's `harness` CLI does, where it came from, and the Claude Code
+# counterpart, for the "built in / configured / orchestrated" comparison.
+FEATURE_MAP: tuple[tuple[str, str, str, str], ...] = (
+    ("Lab 2", "tool loop", "harness ask", "claude / claude -p"),
+    ("Lab 2B", "hooks and rules", ".harness/settings.json hooks, .harness/rules/",
+     ".claude/settings.json hooks, .claude/rules/"),
+    ("Lab 3", "sessions", "harness ask -c / -r / --fork, harness sessions",
+     "claude -c / -r / --fork-session"),
+    ("Lab 4", "plan mode and todos", "--plan, /plan, /execute, /todos", "plan mode (Shift+Tab), todos"),
+    ("Lab 5", "file memory", "HARNESS.md, /init, /memory", "CLAUDE.md, /init, /memory"),
+    ("Lab 6", "permissions", "permissions in .harness/settings.json, --accept-edits",
+     "permissions in .claude/settings.json, --permission-mode"),
+    ("Lab 7", "tracing and cost", "--trace, harness trace, /cost, /context",
+     "--output-format stream-json, /cost, /context"),
+    ("Lab 8", "skills and MCP", ".harness/skills/, harness mcp add", ".claude/skills/, claude mcp add"),
+    ("Lab 9", "subagents and background agents", ".harness/agents/, harness ask --bg",
+     ".claude/agents/, claude --bg"),
+    ("Lab 10", "compaction", "/compact, /clear, --compact-at", "/compact, /clear, auto-compact"),
+    ("Lab 11", "stop hooks and bounds", "stop hooks, --max-iterations", "Stop hooks, --max-budget-usd"),
+    ("Lab 12", "routing graph", "harness route", "a script around claude -p (route.sh)"),
+    ("Lab 13", "planner-generator-evaluator", "harness pge", "a script around claude -p (pge.sh)"),
+)
+
+
+def render_feature_map() -> str:
+    rows = [("Lab", "Capability", "This harness", "Claude Code"), *FEATURE_MAP]
+    widths = [max(len(row[index]) for row in rows) for index in range(4)]
+    lines = ["  ".join(cell.ljust(width) for cell, width in zip(row, widths)).rstrip() for row in rows]
+    lines.insert(1, "  ".join("-" * width for width in widths))
+    return "\n".join(lines)

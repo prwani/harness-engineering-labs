@@ -1,8 +1,12 @@
 {
   "number": 10,
   "slug": "compaction",
-  "title": "Compaction and repository map",
+  "title": "Context and compaction",
   "capabilities": [
+    "/compact with instructions",
+    "session reset entries",
+    "automatic compaction threshold",
+    "ranged file reads",
     "context compaction policy",
     "summary handoff artifact",
     "repository map metadata"

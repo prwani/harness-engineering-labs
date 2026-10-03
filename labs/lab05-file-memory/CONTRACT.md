@@ -7,10 +7,15 @@
 
 ## Capability additions
 
-- session memory
-- optimistic concurrency
-- path scope enforcement
+- file memory: user `$HARNESS_HOME/HARNESS.md`, project `HARNESS.md` and local
+  `HARNESS.local.md`, loaded broadest first into the system prompt, capped at
+  20,000 characters per file
+- memory is reread for every question, so edits apply mid-session
+- CLI: `/memory`, `/init [instructions]`, `harness memory files`
+- in-process models of session memory, optimistic concurrency and path scopes
+  (`memory.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains Lab 4 plan mode and todos, Lab 3 sessions and the Lab 2B
+tool loop: file, test, repository and CLI tools run behind the built-in command
+policy, project hooks and rules, and each answer reports elapsed time plus
+LLM/tool call counts.

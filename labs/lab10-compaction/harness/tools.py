@@ -52,6 +52,23 @@ def _safe_path(root: Path, relative: str) -> Path:
     return candidate
 
 
+READ_MAX_LINES = 1000
+
+
+def _read_lines(path: Path, args: dict[str, Any]) -> str:
+    """A range of lines, for files too large to read at once (up to 10 MB)."""
+    if path.stat().st_size > 10_000_000:
+        raise ValueError("File exceeds the 10 MB read limit.")
+    start = int(args.get("start_line", 1))
+    count = min(int(args.get("max_lines", READ_MAX_LINES)), READ_MAX_LINES)
+    if start < 1 or count < 1:
+        raise ValueError("start_line and max_lines must be at least 1.")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    chunk = lines[start - 1:start - 1 + count]
+    end = start + len(chunk) - 1
+    return f"[lines {start}-{end} of {len(lines)}]\n" + "\n".join(chunk)
+
+
 def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     root = repository.resolve()
     if not root.is_dir():
@@ -91,9 +108,16 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
         path = _safe_path(root, str(args["path"]))
         if not path.is_file():
             raise ValueError("Requested path is not a regular file.")
+        if "start_line" in args or "max_lines" in args:
+            return _read_lines(path, args)
         if path.stat().st_size > 100_000:
-            raise ValueError("File exceeds the 100 KB read limit.")
-        return path.read_text(encoding="utf-8")[:20_000]
+            raise ValueError("File exceeds the 100 KB read limit; read it in parts with "
+                             "start_line and max_lines.")
+        text = path.read_text(encoding="utf-8")
+        if len(text) <= 20_000:
+            return text
+        return (text[:20_000] + f"\n[truncated at 20,000 of {len(text):,} characters; "
+                "read the rest with start_line and max_lines]")
 
     def write_file(args: dict[str, Any]) -> str:
         path = _safe_path(root, str(args["path"]))
@@ -169,10 +193,17 @@ def build_tools(repository: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
         },
         {
             "name": "read_file",
-            "description": "Read a UTF-8 text file up to 100 KB under the repository root.",
+            "description": (
+                "Read a UTF-8 text file under the repository root: the whole file up to 100 KB, "
+                "or a range of up to 1000 lines with start_line and max_lines."
+            ),
             "input_schema": {
                 "type": "object",
-                "properties": {"path": {"type": "string", "description": "Repository-relative file path"}},
+                "properties": {
+                    "path": {"type": "string", "description": "Repository-relative file path"},
+                    "start_line": {"type": "integer", "description": "First line to read, from 1"},
+                    "max_lines": {"type": "integer", "description": "Number of lines, at most 1000"},
+                },
                 "required": ["path"],
                 "additionalProperties": False,
             },

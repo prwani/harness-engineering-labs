@@ -6,11 +6,37 @@ from harness.cli.interactive import Activity, render_turn, run_interactive
 from harness.models.foundry import create_model_client
 
 
+def describe_session(session) -> str:
+    label = f" '{session.name}'" if session.name else ""
+    fork = f", fork of {session.forked_from[:8]}" if session.forked_from else ""
+    return f"Session {session.session_id[:8]}{label}: {len(session.messages)} messages{fork}"
+
+
+def activity_events(activity: Activity):
+    """Show tool calls and hook decisions as permanent lines above the spinner."""
+    from harness.chat import Events
+
+    def on_model_call(number: int) -> None:
+        activity.status(f"waiting for model (LLM call {number})")
+
+    def on_tool_call(name: str, args: dict) -> None:
+        activity.echo(f"Tool: {name}({args})")
+        activity.status(f"running {name}", announce=False)
+
+    return Events(
+        on_tool_call=on_tool_call,
+        on_hook_denial=lambda name, reason: activity.echo(f"Hook: denied {name}: {reason}"),
+        on_hook_feedback=lambda name, message: activity.echo(f"Hook: {name}: {message}"),
+        on_model_call=on_model_call,
+    )
+
+
 def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> None:
     if tools_enabled:
         from pathlib import Path
 
-        from harness.learner import ask_with_tools
+        from harness.chat import Chat
+        from harness.session import SessionStore
         from harness.tool_loop import LoopStats
 
         @app.command("ask")
@@ -21,42 +47,45 @@ def register_ask_command(app: typer.Typer, *, tools_enabled: bool = False) -> No
             repo: Path | None = typer.Option(
                 None, "--repo", help="Working directory for repository and CLI tools."
             ),
+            name: str | None = typer.Option(None, "--name", "-n", help="Name for a new session."),
+            continue_latest: bool = typer.Option(
+                False, "--continue", "-c", help="Continue the most recent session in this project."
+            ),
+            resume: str | None = typer.Option(
+                None, "--resume", "-r", help="Resume a session by ID, ID prefix or name."
+            ),
+            fork: bool = typer.Option(
+                False, "--fork", help="With -c or -r: continue in a new copy of the session."
+            ),
         ) -> None:
-            """Ask a question or open the interactive prompt."""
+            """Ask a question or open the interactive prompt, in a saved session."""
             try:
-                client = create_model_client()
+                root = repo or Path.cwd()
+                session = SessionStore(root).open(
+                    name=name, continue_latest=continue_latest, resume=resume, fork=fork
+                )
+                typer.echo(describe_session(session))
+                chat = Chat(create_model_client(), root, session)
 
                 def respond(prompt: str) -> None:
                     stats = LoopStats()
                     with Activity() as activity:
-
-                        def on_model_call(number: int) -> None:
-                            activity.status(f"waiting for model (LLM call {number})")
-
-                        def on_tool_call(name: str, args: dict) -> None:
-                            activity.echo(f"Tool: {name}({args})")
-                            activity.status(f"running {name}", announce=False)
-
-                        def on_hook_denial(name: str, reason: str) -> None:
-                            activity.echo(f"Hook: denied {name}: {reason}")
-
-                        def on_hook_feedback(name: str, message: str) -> None:
-                            activity.echo(f"Hook: {name}: {message}")
-
-                        turn = ask_with_tools(
-                            client,
-                            prompt,
-                            repo=repo or Path.cwd(),
-                            on_tool_call=on_tool_call,
-                            on_hook_denial=on_hook_denial,
-                            on_hook_feedback=on_hook_feedback,
-                            on_model_call=on_model_call,
-                            stats=stats,
-                        )
+                        events = activity_events(activity)
+                        turn = chat.ask(prompt, events, stats)
                     render_turn(turn, elapsed=activity.elapsed, stats=stats)
 
+                def show_session(_: str) -> None:
+                    typer.echo(describe_session(session))
+                    typer.echo(f"File: {session.path}")
+
+                def show_history(_: str) -> None:
+                    for number, text in enumerate(chat.questions(), 1):
+                        typer.echo(f"{number}. {text.splitlines()[0][:100]}")
+                    if not chat.questions():
+                        typer.echo("No questions yet.")
+
                 if question is None:
-                    run_interactive(respond)
+                    run_interactive(respond, {"/session": show_session, "/history": show_history})
                 else:
                     respond(question)
             except Exception as error:

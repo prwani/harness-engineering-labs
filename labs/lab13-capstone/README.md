@@ -1,100 +1,133 @@
 ---
 layout: default
-title: "Lab 13 — Planner, generator, evaluator capstone"
+title: "Lab 13 — Capstone: planner → generator → evaluator"
 ---
 
-# Lab 13 — Planner, generator, evaluator capstone
+# Lab 13 — Capstone: planner → generator → evaluator
 
-## Concept
+Combine everything: separate roles with separate tool lists, a human
+approval gate, a machine-checked verdict and a bounded revision loop.
+This standalone snapshot adds `harness pge "feature"`:
 
-The capstone composes nearly every prior lab into one system: a **dynamic**
-graph (Lab 12's static/dynamic distinction resolved in favor of dynamic) run
-by three specialized agents — planner, generator, evaluator — coordinated
-through files, loops, and fan-out, with an ablation study to find out which
-pieces actually matter.
+```mermaid
+flowchart LR
+  P["planner<br/>read-only"] --> H{{"human approves<br/>PLAN.md"}}
+  H --> G["generator<br/>edit files + run_tests"]
+  G --> E["evaluator<br/>fresh context, read + run_tests + read-only git<br/>JSON verdict"]
+  E -->|FAIL, ≤ 2 revisions| G
+  E -->|PASS| D[human reviews diff and commits]
+```
 
-**Key ideas**
-- Three agent specs, one harness: `planner` reads the catalog and writes a
-  per-product plan **at runtime** — the graph's nodes are created from data,
-  which is what makes it dynamic rather than a fixed set of branches.
-- `generator` mounts the Lab 8 `product-description` skill and fans out over
-  parallel edges (reusing the Lab 9 spawner); a separate, deliberately
-  **sceptical** `evaluator` — using a different model family than the
-  generator — scores each result against a calibrated rubric with hard
-  thresholds.
-- A **refinement loop** (Lab 11's anatomy) runs each item until it passes,
-  a round cap is hit, or there's no more progress; agents hand off state
-  through per-item contract files, not shared memory.
-- **Ablation is the point:** remove one component at a time — an *agent*
-  (planner, evaluator) or a *harness feature* (approval, skills, tool
-  search, compaction) — and re-run the eval suite across model families to
-  see what's actually load-bearing for today's models, and whether the value
-  lost lives in the runtime or in an agent definition.
+The evaluator starts from an **empty history**. It doesn't see the
+generator's reasoning, only the plan, the code and the test results.
+That independence is the point.
 
-This self-contained snapshot starts from Lab 12 and introduces a first-cut,
-offline-testable representation of its capability. It retains all earlier checks
-and can be installed independently.
+The exercise matches the
+[Claude Code Lab 13](../../existing-harnesses/claude-code/lab13-capstone/).
 
-## Added in this lab
+## What changes
 
-- [`harness/capstone.py`](harness/capstone.py) adds `AblationConfig` and
-  `build_capstone_graph()` to compose planning, generation, and separate
-  evaluation nodes with a configurable refinement route.
-- The same module adds `run_capstone()` for graph execution and `AblationRun`
-  for summarizing the enabled capabilities and result.
+- [`harness/pge.py`](harness/pge.py) runs the graph in plain code:
+  - **planner**: `list_files`, `read_file`, `git_status`, `git_log`. The
+    harness writes its answer to `PLAN.md`.
+  - **human gate**: the CLI stops until you confirm. Edit `PLAN.md` first
+    if you disagree; the generator reads the file.
+  - **generator**: `list_files`, `read_file`, `write_file`, `edit_file`,
+    `run_tests`, with edits accepted.
+  - **evaluator**: `list_files`, `read_file`, `run_tests`, `git_status`
+    and `git_cli` (read-only git only: anything else would ask, and asks
+    are denied). It must reply with a JSON verdict; anything else counts
+    as FAIL.
+  - On FAIL, the generator gets the failed criteria and feedback, at most
+    `--max-revisions` times (default 2).
+- Each role is an agent (Lab 9) behind the project's hooks and
+  permissions; nobody is asked to approve a call during the run. Nothing
+  is committed.
+- One trace per run in `.runs/pge-<time>.jsonl`, with a `node` event per
+  role and a `verdict` event per evaluation.
+- `--no-evaluator` is an ablation: one generator pass, no independent
+  check, so you can compare.
+
+[`harness/capstone.py`](harness/capstone.py) keeps the earlier in-process
+model of a planner-generator-evaluator graph with ablation metadata.
 
 ## Learner steps
 
-1. Create and activate a virtual environment, then install the lab:
+**Start from:** `labs/app/` at tag `lab12-done` (see the
+[track guide](../README.md#working-in-labsapp)).
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-2. Run a small planner → generator → separate evaluator flow and inspect its
-   score and visited nodes:
+1. Install this lab and configure Foundry as before:
 
    ```bash
-   python - <<'PY'
-   from harness.capstone import AblationConfig, EvaluationResult, build_capstone_graph, run_capstone
-   from harness.graph import GraphState
-
-   config = AblationConfig(planning=True, evaluation=True, max_refinements=1)
-   graph = build_capstone_graph(
-       config,
-       lambda state: state.with_data(plan=["inspect product"]),
-       lambda state: f"Draft based on {state.data['plan']}",
-       lambda output, _state: EvaluationResult(True, "contains a plan", 1.0),
-   )
-   result = run_capstone(graph, config, GraphState())
-   print("Visited:", " -> ".join(result.visited))
-   print("Evaluator passed:", result.data["evaluation"].passed)
-   PY
+   python -m venv .venv
+   . .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+   pip install -e '.[dev]'
+   cp .env.example .env
+   az login
+   cd ../app
    ```
 
-   The evaluator is a separate graph step, and the output makes the plan and
-   evaluation path observable.
-3. Run `pytest checks/test_capstone.py` for deterministic verification, then
-   `pytest checks/` for the full regression suite.
-4. Inspect the snapshot's declared capabilities with `harness lab-info`.
-5. Optional: to try the live Foundry prompt, copy `.env.example` to `.env`,
-   fill in the endpoint and deployment settings, and sign in with `az login`.
-   Run `harness ask` to ask repeated questions and type `/exit` to leave; use
-   `harness ask "<question>"` for one-shot use. Each question is an independent
-   turn; the Python example above exercises this lab's capstone workflow.
-   `ask` retains Lab 2B's file, test, repository and CLI tools behind the
-   same hooks (shell and destructive Git denied; project hooks and rules
-   from `.harness/` in the working directory), shows a spinner while it
-   works, and ends each answer with the total time and a `Summary:` of
-   LLM and tool calls.
-   `--repo PATH` changes the tools' starting directory.
+   Read [`harness/pge.py`](harness/pge.py) first.
 
-## External integrations
+2. Run it on a feature branch:
 
-The following integration requires learner-provisioned credentials and resources;
-this snapshot does not include a command to run it:
-- full Foundry evaluation suite
+   ```bash
+   git switch -c feature/receipt
+   harness pge "Add a 'receipt' CLI command: python cli.py receipt P1:2 P3:1 --code SAVE10 prints an itemized receipt with line totals, discount, tax and grand total, all from integer cents. Include tests."
+   ```
 
-All live paths must use Entra credentials and must not add API-key configuration.
+   (Adjust the flags if your Lab 4 discount design differs.) When it
+   pauses, **read `PLAN.md`**. Edit it if you disagree, then answer `y`.
+
+3. Observe the roles:
+   - Planner: which files did it read? Did it touch anything? (It can't.)
+   - Generator: LLM calls, files changed, hook feedback.
+   - Evaluator: its verdict and failed criteria. If it said FAIL, did the
+     revision fix exactly what it flagged?
+   - The whole run is in `.runs/pge-<time>.jsonl`; summarize it with
+     `harness trace`.
+
+4. Review and finish as the human:
+
+   ```bash
+   git diff --stat main
+   python -m pytest -q
+   ```
+
+   Nothing is committed automatically. If you agree with the verdict,
+   commit (Conventional Commit message), merge into `main`, and maybe run
+   `/release-notes` from Lab 8.
+
+5. Optional ablation: on a throwaway branch from `main`, run the same
+   feature with `--no-evaluator` and compare the result with the evaluated
+   run.
+
+6. **Record**
+
+   | Node | LLM calls | Tool calls | Denied | Output |
+   |---|---|---|---|---|
+
+   Plus: did the evaluator catch anything you would have missed? Did it
+   pass something you'd reject?
+
+7. **Checkpoint.** In `app/`:
+
+   ```bash
+   git switch main && git merge --no-ff feature/receipt
+   git tag lab13-done
+   ```
+
+8. Back in the lab folder, run the offline checks and inspect the declared
+   capabilities:
+
+   ```bash
+   pytest checks/
+   harness lab-info
+   ```
+
+`harness ask` keeps stop hooks (Lab 11), compaction (Lab 10), subagents and
+background agents (Lab 9), skills and MCP (Lab 8), tracing (Lab 7),
+permissions (Lab 6), file memory (Lab 5), plan mode and todos (Lab 4),
+sessions (Lab 3) and the Lab 2B tools, built-in policy, project hooks and
+rules; `harness route` (Lab 12) is still available. This is a teaching
+harness, not a sandbox: only use it on the practice app.

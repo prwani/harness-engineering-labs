@@ -722,6 +722,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Framework sidebar:** `AgentSession` / thread persistence in Agent Framework.
 
+**Practice app (as built):** in `labs/app/`, `harness ask -n low-stock-threshold` names a session, `-c` / `-r NAME` resume it, `--fork` branches it, and `harness sessions` lists the JSONL sessions kept under `~/.harness/projects/<project>/sessions/`.
+
 ### Lab 4 — Planning and todos
 
 **Concepts**
@@ -759,6 +761,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 **Discuss:** in Microsoft Agent Framework and Copilot, "mode" is a harness feature on a single agent. Here it is two agents. What changes?
 
 **Framework sidebar:** `create_harness_agent` (todos and modes on by default).
+
+**Practice app (as built):** `harness ask --plan` (or `/plan`) hides and denies write tools while the model plans with `write_todos`; only the human's `/execute` switches to execute mode. The learner plans and builds discount codes.
 
 ### Lab 5 — File memory and access
 
@@ -806,6 +810,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 >    - the malformed output (Lab 11)
 
 **Framework sidebar:** `FileAccessProvider(scope=...)`.
+
+**Practice app (as built):** the harness loads user, project and local `HARNESS.md` memory files into every question, `/memory` or `harness memory files` shows what loaded, and `/init` drafts a project file; the learner records conventions and adds gift wrapping.
 
 ### Lab 6 — Tool approval and safety gates ✅ agenda Lab 2A checkpoint
 
@@ -860,6 +866,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Framework sidebar:** tool approval and auto-approval rules in Agent Framework.
 
+**Practice app (as built):** `.harness/settings.json` gains `permissions` allow/ask/deny rules, edits ask for approval unless `--accept-edits`, and `harness permissions` shows the effective rules; the learner generates a price list from a catalog containing a prompt injection.
+
 ### Lab 7 — Observability (OpenTelemetry) and prompt caching
 
 **Concepts**
@@ -911,6 +919,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
   - `+cache`: on the warm-up rerun, `cache_hit_rate` rises for every deployment whose Lab 0 probe reports caching support. The assertion is skipped (and reported as skipped) where the probe says caching isn't available, for example below the minimum prefix or on an untested deployment type.
 
 **Framework sidebar:** Agent Framework built-in OpenTelemetry.
+
+**Practice app (as built):** `harness ask --trace FILE` writes a JSONL event log and `harness trace FILE` summarises tool calls, timings, tokens and estimated cost; the learner traces adding a `stats` command.
 
 ### Lab 8 — Agent skills and tool scaling ✅ agenda Lab 2B checkpoint
 
@@ -968,6 +978,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 - **Checkpoint (agenda Lab 2B), after Part A:** spans on every step (Lab 7 Part A), the most expensive and most failure-prone steps identified (Lab 7 Part A) and fixed (Lab 7 Part B), and one behaviour packaged as a mountable, governed skill (this lab, Part A). Part B goes beyond the agenda.
 
 **Framework sidebar:** the Agent Framework skills provider / `skills_paths`, and MCP tools.
+
+**Practice app (as built):** project skills in `.harness/skills/*/SKILL.md` load on demand (`harness skills`), and `harness mcp add|list|remove` registers stdio MCP servers whose tools appear as `mcp__server__tool`; the learner writes release notes and queries a synthetic orders server.
 
 ### Lab 9 ★ — Background agents and parallel delegation (Part B: scaling compute)
 
@@ -1052,6 +1064,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Framework sidebar:** Agent Framework background agents vs. background responses.
 
+**Practice app (as built):** subagents in `.harness/agents/*.md` (restricted tools, own context) run through `run_agent`; `harness ask --bg -n NAME` runs a background agent in a git worktree, managed with `harness agents`, `harness logs NAME` and `harness rm NAME`.
+
 ### Lab 10 ★ — Compaction
 
 **Concepts**
@@ -1091,6 +1105,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 **Callout:** Anthropic's **context reset plus handoff artefact** as an alternative to compaction, and when each is the right choice.
 
 **Framework sidebar:** Agent Framework compaction options.
+
+**Practice app (as built):** `/compact [instructions]`, `/clear` and `--compact-at TOKENS` manage the history (a summary replaces the old turns and the session records a reset); `read_file` takes line ranges for large files such as the generated log.
 
 ### Lab 11 — Loop engineering
 
@@ -1139,6 +1155,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
   - The trace shows each loop's iterations and the reason it exited.
 
 **Framework sidebar:** `AgentLoopMiddleware` (predicate, `with_judge`, `max_iterations`, `fresh_context`).
+
+**Practice app (as built):** `stop` hooks in `.harness/settings.json` can refuse to let the run end (at most 3 times) and `--max-iterations` caps the loop; the learner's stop gate requires a protected spec test to pass for a bulk discount.
 
 ### Lab 12 — Graph engineering ✅ agenda Lab 2C checkpoint
 
@@ -1231,6 +1249,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 
 **Framework sidebar:** Agent Framework Workflows: executors, conditional edges, and human-in-the-loop requests.
 
+**Practice app (as built):** `harness route TICKET` classifies a ticket with a tool-less model call and sends it to a bug, question or feature specialist with restricted tools; unparseable output escalates, and each run writes a trace to `.runs/`.
+
 ### Lab 13 ★ — Capstone: Planner → Generator → Evaluator as a dynamic graph
 
 **Build** — three custom agents on one harness
@@ -1254,6 +1274,8 @@ eval suite and prints the delta against `h<N-1>` (§2.5). Lab 0 has no delta, an
 - Learners decide which are load-bearing *for today's models*, and whether each lost value lives in the runtime or in an agent definition.
 
 **Bonus (repo legibility):** have the agent write an `AGENTS.md` for `aks-store-demo` as a map, not a manual, and measure whether it reduces Lab 2 token usage.
+
+**Practice app (as built):** `harness pge FEATURE` runs a planner (writes `PLAN.md`), a human approval gate, a generator and a fresh read-only evaluator, with at most 2 revisions; `--no-evaluator` is the ablation.
 
 ### Lab 14 ★ (bonus, Track A) — Same agent, someone else's harness
 
@@ -1286,6 +1308,8 @@ Goal: show that Claude Code and Copilot CLI are **harnesses**, and that what lea
 **Verify:** the simulator's write log shows only approved writes, `injection_followed = 0`, and the skill hash matches `skills.lock`.
 
 **Optional:** run the native harness inside an **ACA Sandbox**, using the Lab 9 base snapshot and egress policy. This shows that someone else's harness can be scaled and isolated in the same way as ours.
+
+**Practice app (as built):** learners run the same feature task with `harness ask --trace` and with another harness from `lab13-done`, compare the logs, and use `harness features` to map each capability to its lab and its Claude Code equivalent.
 
 ---
 
@@ -1455,7 +1479,7 @@ table. Lab 9 is therefore strongly recommended when this topic is on the agenda.
 | 1 | Language | **Python only.** .NET may follow later. |
 | 2 | Build style | **Build the harness from scratch.** Microsoft Agent Framework appears only as the per-lab mapping sidebar (Track C), for example `pre_tool` hook ↔ function middleware. |
 | 3 | Runtime surface | **The `harness` CLI on the learner's own machine**, talking to the local Store Simulator. The real app is deferred. |
-| 4 | Scope | **Build Labs 0–8 first.** Labs 9–14 stay in the outline for a later phase. |
+| 4 | Scope | **Labs 0–8 were built first, then Labs 9–14.** Every lab now has practice-app steps in `labs/app/`; the "Practice app (as built)" notes in §6 describe what each lab ships. |
 | 5 | Tracing backend | **Foundry tracing** (Application Insights connected to the project), with Entra-based ingestion. In-memory and console exporters are used for offline checks. |
 | 6 | Compute | **Labs 0–8 need neither Docker nor ACA.** From Lab 9 onward, **ACA Dynamic Sessions and Sandboxes are required** for live runs, and `local` is used only for offline checks. |
 

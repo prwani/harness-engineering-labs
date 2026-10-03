@@ -1,11 +1,13 @@
 {
   "number": 9,
   "slug": "background-agents",
-  "title": "Background agents and delegation",
+  "title": "Subagents and background agents",
   "capabilities": [
-    "sub-agent task model",
-    "parallel fan-out plan",
-    "isolated child transcripts"
+    "agent definitions with tool allow-lists",
+    "run_agent subagents with isolated context",
+    "isolated child transcripts",
+    "background agents in git worktrees",
+    "sub-agent task model"
   ],
   "live_validation": [
     "ACA sandbox execution"

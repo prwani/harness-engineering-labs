@@ -7,10 +7,19 @@
 
 ## Capability additions
 
-- dynamic planner-generator-evaluator graph
-- separate evaluator
-- ablation metadata
+- `harness pge "feature" [--max-revisions N] [--no-evaluator] [--repo] [--runs]`
+- planner (read-only) writes `PLAN.md`; a human gate confirms before any edit
+- generator with edit and test tools, edits accepted, no prompts
+- evaluator in a fresh context with read, test and read-only git tools; JSON
+  verdict, anything unparseable is FAIL
+- bounded revision loop feeding the evaluator's failed criteria back to the
+  generator
+- one trace per run in `.runs/pge-<time>.jsonl` with `node` and `verdict` events
+- `--no-evaluator` ablation
+- in-process model of the planner-generator-evaluator graph with ablation
+  metadata (`capstone.py`)
 
-`harness ask` retains the Lab 2B tool loop: repository and CLI tools run
-behind the pre-tool command policy and pre-model history validation, and
-each answer reports elapsed time plus LLM/tool call counts.
+`harness ask` retains Lab 11 stop hooks, Lab 10 compaction, Lab 9 subagents and
+background agents, Lab 8 skills and MCP, Lab 7 tracing, Lab 6 permissions, Lab 5
+file memory, Lab 4 plan mode and todos, Lab 3 sessions and the Lab 2B tool loop;
+`harness route` (Lab 12) is retained.
